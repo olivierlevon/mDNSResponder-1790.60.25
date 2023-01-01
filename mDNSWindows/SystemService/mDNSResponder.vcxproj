@@ -300,7 +300,7 @@
     <ClCompile Include="..\..\mDNSWindows\VisualStudioSupport.cpp" />
     <ClCompile Include="Firewall.cpp" />
     <ClCompile Include="..\..\mDNSShared\GenLinkedList.c" />
-    <ClCompile Include="..\..\mDNSMacOSX\LegacyNATTraversal.c" />
+    <ClCompile Include="..\..\mDNSShared\LegacyNATTraversal.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="..\..\mDNSCore\mDNS.c" />
     <ClCompile Include="..\..\mDNSShared\mDNSDebug.c" />

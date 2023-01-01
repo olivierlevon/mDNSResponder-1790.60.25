@@ -258,7 +258,7 @@
     <ClCompile Include="..\..\mDNSShared\GenLinkedList.c" />
     <ClCompile Include="..\..\mDNSShared\mDNSDebug.c" />
     <ClCompile Include="..\..\mDNSWindows\mDNSWin32.c" />
-    <ClCompile Include="..\..\mDNSPosix\NetMonitor.c" />
+    <ClCompile Include="..\..\mDNSShared\NetMonitor.c" />
     <ClCompile Include="..\..\mDNSWindows\PosixCompat.c" />
     <ClCompile Include="..\..\mDNSWindows\Secret.c" />
     <ClCompile Include="..\..\mDNSCore\uDNS.c" />

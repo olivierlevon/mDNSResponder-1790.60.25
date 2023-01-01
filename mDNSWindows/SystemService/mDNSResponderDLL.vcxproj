@@ -291,7 +291,7 @@
     <ClCompile Include="..\..\mDNSCore\DNSDigest.c" />
     <ClCompile Include="..\..\mDNSCore\mDNS.c" />
     <ClCompile Include="..\..\mDNSCore\uDNS.c" />
-    <ClCompile Include="..\..\mDNSMacOSX\LegacyNATTraversal.c" />
+    <ClCompile Include="..\..\mDNSShared\LegacyNATTraversal.c" />
     <ClCompile Include="..\..\mDNSShared\ClientRequests.c" />
     <ClCompile Include="..\..\mDNSShared\DebugServices.c" />
     <ClCompile Include="..\..\mDNSShared\dnssd_ipc.c" />
