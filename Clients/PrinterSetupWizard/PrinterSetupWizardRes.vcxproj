@@ -362,7 +362,6 @@
     <None Include="res\Printer.bmp" />
     <None Include="res\PrinterSetupWizardRes.rc2" />
     <None Include="res\watermark.bmp" />
-    <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PrinterSetupWizardRes.rc" />

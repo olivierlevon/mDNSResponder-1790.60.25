@@ -37,7 +37,6 @@
     <None Include="res\watermark.bmp">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PrinterSetupWizardRes.rc">
