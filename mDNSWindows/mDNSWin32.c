@@ -819,7 +819,7 @@ mDNSexport mDNSs32	mDNSPlatformContinuousTimeSeconds( void )
 	// behave correctly. We use GetTickCount64() rather than GetTickCount() because
 	// GetTickCount() would wrap after 47 days, and two's complement comparisons
 	// wouldn't work because we're dividing by 1000.
-	return ( mDNSs32 ) (GetTickCount64( NULL ) / 1000ULL);
+	return ( mDNSs32 ) (GetTickCount64( ) / 1000ULL);
 }
 
 //===========================================================================================================================

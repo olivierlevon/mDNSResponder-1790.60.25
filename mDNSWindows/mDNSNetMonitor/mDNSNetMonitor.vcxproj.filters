@@ -89,12 +89,6 @@
     <ClInclude Include="..\..\mDNSWindows\Poll.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\mDNSCore\anonymous.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\mDNSCore\CryptoAlg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="mDNSNetMonitor.rc">

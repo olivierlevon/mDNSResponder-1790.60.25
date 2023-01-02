@@ -113,7 +113,16 @@
     <ClInclude Include="..\..\mDNSShared\uds_daemon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\mDNSCore\CryptoAlg.h">
+    <ClInclude Include="..\..\mDNSShared\dns_sd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\mDNSShared\mDNSFeatures.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RegNames.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\VisualStudioSupport.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
