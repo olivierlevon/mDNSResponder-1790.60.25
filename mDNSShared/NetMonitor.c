@@ -57,7 +57,6 @@ void setlinebuf( FILE * fp ) {}
 #   define UDPSocket_struct _UDPSocket_struct
 #   include "mDNSPosix.h"      // Defines the specific types needed to run mDNS on this platform
 #endif
-#include "ExampleClientApp.h"
 
 //*************************************************************************************************************
 // Types and structures
