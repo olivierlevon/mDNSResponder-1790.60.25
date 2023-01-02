@@ -2938,7 +2938,7 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 {
 	mStatus			err;
 	SocketRef		sock;
-	int				option;
+	DWORD			option;
 	DWORD			bytesReturned = 0;
 	BOOL			behavior = FALSE;
 	
@@ -3057,6 +3057,15 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 		sa6.sin6_addr		= sa6p->sin6_addr;
 		sa6.sin6_scope_id	= sa6p->sin6_scope_id;
 		
+		// We only want to receive IPv6 packets (not IPv4-mapped IPv6 addresses) because we have a separate socket 
+		// for IPv4.
+		
+		#if( defined( IPV6_V6ONLY ) )
+			option = 1;
+			err = setsockopt( sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *) &option, sizeof( option ) );
+			check_translated_errno( err == 0, errno_compat(), kOptionErr );		
+		#endif		
+
 		err = bind( sock, (struct sockaddr *) &sa6, sizeof( sa6 ) );
 		check_translated_errno( err == 0, errno_compat(), kUnknownErr );
 		
@@ -3065,16 +3074,6 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 		option = 1;
 		err = setsockopt( sock, IPPROTO_IPV6, IPV6_PKTINFO, (char *) &option, sizeof( option ) );
 		check_translated_errno( err == 0, errno_compat(), kOptionErr );
-		
-		// We only want to receive IPv6 packets (not IPv4-mapped IPv6 addresses) because we have a separate socket 
-		// for IPv4, but the IPv6 stack in Windows currently doesn't support IPv4-mapped IPv6 addresses and doesn't
-		// support the IPV6_V6ONLY socket option so the following code would typically not be executed (or needed).
-		
-		#if( defined( IPV6_V6ONLY ) )
-			option = 1;
-			err = setsockopt( sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *) &option, sizeof( option ) );
-			check_translated_errno( err == 0, errno_compat(), kOptionErr );		
-		#endif
 		
 		if ( !mDNSIPPortIsZero( port ) )
 		{
@@ -3087,7 +3086,7 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 		
 			// Specify the interface to send multicast packets on this socket.
 		
-			option = (int) sa6p->sin6_scope_id;
+			option = (DWORD) sa6p->sin6_scope_id;
 			err = setsockopt( sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, (char *) &option, sizeof( option ) );
 			check_translated_errno( err == 0, errno_compat(), kOptionErr );
 		
