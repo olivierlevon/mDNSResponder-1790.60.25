@@ -2126,6 +2126,9 @@ DNSServiceErrorType DNSSD_API DNSServiceCreateDelegateConnection(DNSServiceRef *
 
 DNSServiceErrorType DNSServiceSendQueuedRequestsInternal(DNSServiceRef sdr)
 {
+#if defined(_WIN32)
+    DNSServiceErrorType err = kDNSServiceErr_Unsupported;
+#else
     struct iovec *iov;
     ssize_t totalLength = 0, bytesWritten;
     uint32_t numMsg, i;
@@ -2183,6 +2186,7 @@ DNSServiceErrorType DNSServiceSendQueuedRequestsInternal(DNSServiceRef sdr)
         mdns_free(rref->msg);
     }
     mdns_free(iov);
+#endif
     return err;
 }
 

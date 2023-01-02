@@ -116,7 +116,10 @@
 	_MDNS_STRICT_DISPOSE_TEMPLATE(obj, free)
 
 static
-inline __attribute__((always_inline))
+inline
+#if defined(__GNUC__)
+__attribute__((always_inline))
+#endif
 void _mdns_strict_strlcpy(char * const restrict dst, const char * const restrict src, const size_t dst_len)
 {
 	if (dst_len == 0) {
