@@ -387,6 +387,7 @@
     <Midl Include="DLLX.idl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\mDNSShared\dns_sd.h" />
     <ClInclude Include="_IDNSSDEvents_CP.H" />
     <ClInclude Include="dlldatax.h" />
     <ClInclude Include="DNSSDEventManager.h" />

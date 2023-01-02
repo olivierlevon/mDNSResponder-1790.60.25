@@ -23,5 +23,8 @@
     <ClInclude Include="DLLStub.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\mDNSShared\dns_sd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

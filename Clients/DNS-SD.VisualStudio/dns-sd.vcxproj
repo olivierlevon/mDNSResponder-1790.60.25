@@ -281,6 +281,7 @@
     <ClCompile Include="..\dns-sd.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\mDNSShared\dns_sd.h" />
     <ClInclude Include="..\ClientCommon.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

@@ -434,6 +434,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\mDNSShared\CommonServices.h" />
     <ClInclude Include="..\..\mDNSShared\DebugServices.h" />
+    <ClInclude Include="..\..\mDNSShared\dns_sd.h" />
     <ClInclude Include="..\..\mDNSWindows\isocode.h" />
     <ClInclude Include="..\..\mDNSWindows\loclibrary.h" />
     <ClInclude Include="..\..\mDNSWindows\WinServices.h" />

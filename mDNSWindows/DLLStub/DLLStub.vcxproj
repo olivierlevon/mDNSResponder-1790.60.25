@@ -211,6 +211,7 @@
     <ClCompile Include="DLLStub.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\mDNSShared\dns_sd.h" />
     <ClInclude Include="DLLStub.h" />
   </ItemGroup>
   <ItemGroup>
