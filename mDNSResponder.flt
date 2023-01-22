@@ -1,0 +1,98 @@
+## This is a directory/file filter for WinMerge 
+## This filter lets through only files mDNSResponder developers care about 
+name: mDNSResponder source only
+desc: Exclude Source Control files and directories, and various binaries found in mDNSResponder source trees
+
+
+
+
+
+## This is an inclusive (loose) filter
+## (it lets through everything not specified)
+def: include
+
+
+## Filters for filenames begin with f: 
+## Filters for directories begin with d: 
+## (Inline comments begin with " ##" and extend to the end of the line) 
+
+f: \.bak$ ## backup
+
+f: \.o$
+f: \.lib$
+
+
+f: \.dll$ ## Windows DLL
+f: \.ocx$ ## OLE Control Extension
+f: \.exe$ ## Windows/DOS executable
+
+
+f: \.jar$
+f: \.class$
+
+f: \~$ 
+f: \.map$ 
+f: \.mod$ 
+f: \.aml$ 
+f: \.bin$ 
+f: \.dat$ 
+f: \.icr$ 
+f: \.lnk$ 
+f: \.log$ 
+f: \.lst$ 
+f: \.pgx$ 
+f: \.rom$ 
+f: \.rls$ 
+
+
+f: \.(vs[sp])?scc$  ## Visual SourceSafe files
+f: ^BuildLog.htm$ ## VC build log file
+f: ^vc\d+\.idb$ ## VC Minimal rebuild dependency file
+
+
+f: \.app ## Application
+f: \.aif
+f: \.aps$ ## VC Binary version of resource file, for quick loading
+f: \.bsc$ ## VC Browser database
+f: \.clw$ ## VC class-wizard status file
+f: \.exp$ ## VC library export file
+f: \\vc60.idb$ ## VC ?
+f: \.idb$ ## VC Rebuild Dependency Information
+f: \.ilk$ ## VC incremental linker memory file
+f: \.lib$ ## compiled libraries
+f: \.ncb$ ## VC parser information file (class view & component gallery stuff)
+f: \.opt$ ## VC project options file
+f: \.obj$ ## VC object module file
+f: \.pch$ ## VC precompiled header file
+f: \.pdb$ ## VC program database file (debugging symbolic information)
+f: \.sbr$ ## VC source browser file (used to create bsc file)
+f: \.res$ ## VC compiled resources file (output of RC [resource compiler])
+f: \.rsc ## Compiled resources
+f: \.suo$ ## VC options file (binary)
+
+f: \.sdf$ ## SQL Server Compact Edition Database File
+f: \.VC.db$ ## VS Solution Database File
+
+
+f: \.cache$ ## ??
+f: \.resource$ ## Compiled resource file.
+f: \.xfrm ## ??
+
+d: \\release$
+d: \\debug$
+
+d: \\out$
+d: \\x64$
+d: \\build$
+d: \\objects$
+
+d: \\support$ ## Filter for directory
+
+d: \\\.vs$ ## A hidden folder that stores .suo and *.db files
+d: \\ipch$ ## Intellisense cache for precompiled header file
+
+
+d: \\\.git$ ## Git directory
+
+d: \\obj$
+d: \\bin$
