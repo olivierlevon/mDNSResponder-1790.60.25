@@ -574,6 +574,8 @@ mDNSexport void	mDNSPlatformClose( mDNS * const inMDNS )
 		g_hAAPI32				= NULL;
 	}
 
+	CloseHandle(inMDNS->p->mainThread);
+
 	WSACleanup();
 	
 	dlog( kDebugLevelTrace, DEBUG_NAME "platform close done\n" );
