@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+<Type Name="in_addr">
+ <DisplayString >{(int)S_un.S_un_b.s_b2}.{(int)S_un.S_un_b.s_b2}.{(int)S_un.S_un_b.s_b2}.{(int)S_un.S_un_b.s_b2}</DisplayString>
+</Type>
+
+<Type Name="in6_addr">
+ <DisplayString >{(unsigned short)(u.Byte[0] &lt;&lt; 8 | u.Byte[1]),Hb}:
+{(unsigned short)(u.Byte[2] &lt;&lt; 8 | u.Byte[3]),Hb}:
+{(unsigned short)(u.Byte[4] &lt;&lt; 8 | u.Byte[5]),Hb}:
+{(unsigned short)(u.Byte[6] &lt;&lt; 8 | u.Byte[7]),Hb}:
+{(unsigned short)(u.Byte[8] &lt;&lt; 8 | u.Byte[9]),Hb}:
+{(unsigned short)(u.Byte[10] &lt;&lt; 8 | u.Byte[11]),Hb}:
+{(unsigned short)(u.Byte[12] &lt;&lt; 8 | u.Byte[13]),Hb}:
+{(unsigned short)(u.Byte[14] &lt;&lt; 8 | u.Byte[15]),Hb}
+ </DisplayString>
+</Type>
+
+<Type Name="sockaddr_in">
+ <DisplayString >{(int)sin_addr.S_un.S_un_b.s_b2}.{(int)sin_addr.S_un.S_un_b.s_b2}.{(int)sin_addr.S_un.S_un_b.s_b2}.{(int)sin_addr.S_un.S_un_b.s_b2}:{(unsigned short)((unsigned short)sin_port &lt;&lt; 8 | (unsigned short)sin_port)}</DisplayString>
+  
+</Type>
+
+<Type Name="sockaddr_in6">
+ <DisplayString >{sin6_flowinfo}
+ [{(unsigned short)(sin6_addr.u.Byte[0] &lt;&lt; 8 | sin6_addr.u.Byte[1]),Hb}:
+{(unsigned short)(sin6_addr.u.Byte[2] &lt;&lt; 8 | sin6_addr.u.Byte[3]),Hb}:
+{(unsigned short)(sin6_addr.u.Byte[4] &lt;&lt; 8 | sin6_addr.u.Byte[5]),Hb}:
+{(unsigned short)(sin6_addr.u.Byte[6] &lt;&lt; 8 | sin6_addr.u.Byte[7]),Hb}:
+{(unsigned short)(sin6_addr.u.Byte[8] &lt;&lt; 8 | sin6_addr.u.Byte[9]),Hb}:
+{(unsigned short)(sin6_addr.u.Byte[10] &lt;&lt; 8 | sin6_addr.u.Byte[11]),Hb}:
+{(unsigned short)(sin6_addr.u.Byte[12] &lt;&lt; 8 | sin6_addr.u.Byte[13]),Hb}:
+{(unsigned short)(sin6_addr.u.Byte[14] &lt;&lt; 8 | sin6_addr.u.Byte[15]),Hb}]:{(unsigned short)((unsigned short)sin6_port &lt;&lt; 8 | (unsigned short)sin6_port)} 
+{sin6_scope_id}
+ </DisplayString>
+</Type>
+
+  
+<Type Name="sockaddr">
+  <DisplayString Condition="sa_family==23">{(sockaddr_in6*)&amp;sa_family}</DisplayString>
+  <DisplayString Condition="sa_family==2">{(sockaddr_in*)&amp;sa_family}</DisplayString>
+  <DisplayString Condition="sa_family==0">Empty</DisplayString>
+  <DisplayString Condition="sa_family!=0 &amp;&amp; sa_family!=2 &amp;&amp; sa_family!=23">Unknown/uninitialized</DisplayString>
+
+</Type>
+
+<Type Name="sockaddr_storage">
+  <DisplayString Condition="ss_family==23">{(sockaddr_in6*)&amp;ss_family}</DisplayString>
+  <DisplayString Condition="ss_family==2">{(sockaddr_in*)&amp;ss_family}</DisplayString>
+  <DisplayString Condition="ss_family==0">Empty</DisplayString>
+  <DisplayString Condition="ss_family!=0 &amp;&amp; ss_family!=2 &amp;&amp; ss_family!=23">Unknown/uninitialized</DisplayString>    
+    
+</Type>
+  
+</AutoVisualizer>

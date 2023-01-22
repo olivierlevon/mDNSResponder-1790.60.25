@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+<!--
+https://code.msdn.microsoft.com/windowsdesktop/Writing-type-visualizers-2eae77a2
+https://msdn.microsoft.com/fr-fr/library/jj620914.aspx
+https://blogs.msdn.microsoft.com/vcblog/2015/09/28/debug-visualizers-in-visual-c-2015/
+https://msdn.microsoft.com/fr-fr/library/75w45ekt.aspx
+https://docs.microsoft.com/en-us/visualstudio/debugger/format-specifiers-in-cpp?view=vs-2019
+https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2019
+
+The schema is defined in %VSINSTALLDIR%\Xml\Schemas\natvis.xsd.
+If multiple valid entries are encountered for the same type, the first one in the following list will be used:
+
+PDB
+Project/solution
+User directory: %USERPROFILE%\My Documents\Visual Studio 2015\Visualizers
+Install directory: %VSINSTALLDIR%\Common7\Packages\Debugger\Visualizers
+-->
+
+  
+<Type Name="UTF8str255">
+ <DisplayString>Len {c[0]} {(char *)&amp;c[1],sb}</DisplayString>
+ <StringView>c,sb</StringView>
+</Type>
+  
+<Type Name="domainlabel">
+ <DisplayString>Len {c[0]} {(char *)&amp;c[1],sb}</DisplayString>
+<!--<DisplayString>{{size = {c[0]}}}</DisplayString>-->
+ <Expand>
+  <Item Name="[size]">c[0]</Item>
+  <ArrayItems>
+   <Size>c[0]</Size>
+   <ValuePointer>c[1]</ValuePointer>
+  </ArrayItems>
+ </Expand>
+</Type>
+  
+<Type Name="mDNSOpaque16">
+  <DisplayString>{(unsigned short)((unsigned short)b[0] &lt;&lt; 8 | (unsigned short)b[1])}</DisplayString>
+</Type>
+
+<Type Name="mDNSAddr">
+ <DisplayString Condition="type == 4">IPv4 {(int)ip.v4.b[0]}.{(int)ip.v4.b[1]}.{(int)ip.v4.b[2]}.{(int)ip.v4.b[3]}</DisplayString>
+ <DisplayString Condition="type == 6">IPv6 {(unsigned short)(ip.v6.b[0] &lt;&lt; 8 | ip.v6.b[1]),Hb}:
+{(unsigned short)(ip.v6.b[2] &lt;&lt; 8 | ip.v6.b[3]),Hb}:
+{(unsigned short)(ip.v6.b[4] &lt;&lt; 8 | ip.v6.b[5]),Hb}:
+{(unsigned short)(ip.v6.b[6] &lt;&lt; 8 | ip.v6.b[7]),Hb}:
+{(unsigned short)(ip.v6.b[8] &lt;&lt; 8 | ip.v6.b[9]),Hb}:
+{(unsigned short)(ip.v6.b[10] &lt;&lt; 8 | ip.v6.b[11]),Hb}:
+{(unsigned short)(ip.v6.b[12] &lt;&lt; 8 | ip.v6.b[13]),Hb}:
+{(unsigned short)(ip.v6.b[14] &lt;&lt; 8 | ip.v6.b[15]),Hb}
+ </DisplayString>
+ <DisplayString Condition="type == 0">EMPTY</DisplayString>
+ <DisplayString >INVALID</DisplayString>
+</Type>
+
+  
+<Type Name="mDNSOpaque32">
+ <DisplayString >IPv4 {(int)b[0]}.{(int)b[1]}.{(int)b[2]}.{(int)b[3]}</DisplayString>
+</Type>
+  
+<Type Name="mDNSOpaque128">
+ <DisplayString >IPv6 {b[0],Hb} {b[1],Hb} {b[2],Hb} {b[3],Hb} : {b[4],Hb} {b[5],Hb} {b[6],Hb} {b[7],Hb} : {b[8],Hb} {b[9],Hb} {b[10],Hb} {b[11],Hb} : {b[12],Hb} {b[13],Hb} {b[14],Hb} {b[15],Hb}</DisplayString>
+</Type>
+  
+<Type Name="mDNSOpaque48">
+ <DisplayString >{b[0],Hb}:{b[1],Hb}:{b[2],Hb}:{b[3],Hb}:{b[4],Hb}:{b[5],Hb}</DisplayString>
+</Type>
+
+<Type Name="v6addr_t">
+ <DisplayString>IPv6 {(int)v6addr_t[0]} {(int)v6addr_t[1]} {(int)v6addr_t[2]} {(int)v6addr_t[3]} : {(int)v6addr_t[4]} {(int)v6addr_t[5]} {(int)v6addr_t[6]} {(int)v6addr_t[7]} : {(int)v6addr_t[8]} {(int)v6addr_t[9]} {(int)v6addr_t[10]} {(int)v6addr_t[11]} : {(int)v6addr_t[12]} {(int)v6addr_t[13]} {(int)v6addr_t[14]} {(int)v6addr_t[15]}</DisplayString>
+</Type> 
+
+
+</AutoVisualizer>
