@@ -20,15 +20,6 @@
 #include "stdafx.h"
 #include "resource.h"
 
-#include <DebugServices.h>
-#include <list>
-#include "afxcmn.h"
-
-#include "afxwin.h"
-
-
-
-
 
 //---------------------------------------------------------------------------------------------------------------------------
 //	CBrowsingPage
@@ -57,56 +48,26 @@ protected:
 	DECLARE_MESSAGE_MAP()
 	
 private:
-	
-	typedef std::list<CString> StringList;
+	afx_msg BOOL OnSetActive();
+	afx_msg void OnOK();
+	void SetModified( BOOL bChanged = TRUE );
+	void Commit();
 
-	afx_msg BOOL
-	OnSetActive();
-	
-	afx_msg void
-	OnOK();
-	
-	void
-	SetModified( BOOL bChanged = TRUE );
-	
-	void
-	Commit();
+	BOOL	m_modified;
 
-	BOOL			m_modified;
-
-public:
-private:
-
-	static int CALLBACK 
-
-	SortFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
-
-
+	static int CALLBACK SortFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 
 	CListCtrl	m_browseListCtrl;
-
 	bool		m_initialized;
-
 	bool		m_firstTime;
 
-
-
 public:
-
-
-
 	afx_msg void OnBnClickedAddBrowseDomain();
-
 	afx_msg void OnBnClickedRemoveBrowseDomain();
-
 	afx_msg void OnLvnItemchangedBrowseList(NMHDR *pNMHDR, LRESULT *pResult);
 
 	CButton m_removeButton;
-
 };
-
-
-
 
 
 //---------------------------------------------------------------------------------------------------------------------------
@@ -117,40 +78,24 @@ public:
 class CAddBrowseDomain : public CDialog
 
 {
-
 	DECLARE_DYNAMIC(CAddBrowseDomain)
 
-
-
 public:
-
 	CAddBrowseDomain(CWnd* pParent = NULL);   // standard constructor
-
 	virtual ~CAddBrowseDomain();
 
-
-
 // Dialog Data
-
 	enum { IDD = IDR_ADD_BROWSE_DOMAIN };
 
-
-
 protected:
-
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-
 	virtual BOOL OnInitDialog();
-
 	virtual void OnOK();
 
 	DECLARE_MESSAGE_MAP()
 
 public:
-
 	CComboBox	m_comboBox;
-
 	CString		m_text;
-
 };
 

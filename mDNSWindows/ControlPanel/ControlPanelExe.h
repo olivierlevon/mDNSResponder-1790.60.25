@@ -37,12 +37,8 @@ public:
 protected:
 
 	virtual BOOL    InitInstance();
-
-	void
-	Register( LPCTSTR inClsidString, LPCTSTR inName, LPCTSTR inCanonicalName, LPCTSTR inCategory, LPCTSTR inLocalizedName, LPCTSTR inInfoTip, LPCTSTR inIconPath, LPCTSTR inExePath );
-
-	void
-	Unregister( LPCTSTR clsidString );
+	void Register( LPCTSTR inClsidString, LPCTSTR inName, LPCTSTR inCanonicalName, LPCTSTR inCategory, LPCTSTR inLocalizedName, LPCTSTR inInfoTip, LPCTSTR inIconPath, LPCTSTR inExePath );
+	void Unregister( LPCTSTR clsidString );
 
 	DECLARE_DYNAMIC(CCPApp);
 };

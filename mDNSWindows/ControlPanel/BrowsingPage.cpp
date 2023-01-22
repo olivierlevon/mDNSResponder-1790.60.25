@@ -16,13 +16,7 @@
  */
 
 #include "BrowsingPage.h"
-#include "resource.h"
-
 #include "ConfigPropertySheet.h"
-
-#include <WinServices.h>
-    
-#define MAX_KEY_LENGTH 255
 
 
 IMPLEMENT_DYNCREATE(CBrowsingPage, CPropertyPage)
@@ -90,8 +84,7 @@ void CBrowsingPage::SetModified( BOOL bChanged )
 //	CBrowsingPage::OnSetActive
 //---------------------------------------------------------------------------------------------------------------------------
 
-BOOL
-CBrowsingPage::OnSetActive()
+BOOL CBrowsingPage::OnSetActive()
 {
 	CConfigPropertySheet	*	psheet;
 	HKEY						key = NULL;
@@ -188,8 +181,7 @@ exit:
 //	CBrowsingPage::OnOK
 //---------------------------------------------------------------------------------------------------------------------------
 
-void
-CBrowsingPage::OnOK()
+void CBrowsingPage::OnOK()
 {
 	if ( m_modified )
 	{
@@ -203,8 +195,7 @@ CBrowsingPage::OnOK()
 //	CBrowsingPage::Commit
 //---------------------------------------------------------------------------------------------------------------------------
 
-void
-CBrowsingPage::Commit()
+void CBrowsingPage::Commit()
 {
 	HKEY		key		= NULL;
 	HKEY		subKey	= NULL;
@@ -254,7 +245,6 @@ CBrowsingPage::Commit()
 	}
 	
 exit:
-
 	if ( subKey )
 	{
 		RegCloseKey( subKey );
@@ -272,8 +262,7 @@ exit:
 //	CBrowsingPage::OnBnClickedAddBrowseDomain
 //---------------------------------------------------------------------------------------------------------------------------
 
-void
-CBrowsingPage::OnBnClickedAddBrowseDomain()
+void CBrowsingPage::OnBnClickedAddBrowseDomain()
 {
 	CAddBrowseDomain dlg( GetParent() );
 
@@ -298,8 +287,7 @@ CBrowsingPage::OnBnClickedAddBrowseDomain()
 //	CBrowsingPage::OnBnClickedRemoveBrowseDomain
 //---------------------------------------------------------------------------------------------------------------------------
 
-void
-CBrowsingPage::OnBnClickedRemoveBrowseDomain()
+void CBrowsingPage::OnBnClickedRemoveBrowseDomain()
 {
 	UINT	selectedCount = m_browseListCtrl.GetSelectedCount();
 	int		nItem = -1;
@@ -321,8 +309,7 @@ CBrowsingPage::OnBnClickedRemoveBrowseDomain()
 }
 
 
-void
-CBrowsingPage::OnLvnItemchangedBrowseList(NMHDR *pNMHDR, LRESULT *pResult)
+void CBrowsingPage::OnLvnItemchangedBrowseList(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	if ( m_browseListCtrl.GetSelectedCount() )
 	{
@@ -359,8 +346,7 @@ CBrowsingPage::OnLvnItemchangedBrowseList(NMHDR *pNMHDR, LRESULT *pResult)
 
 
 
-int CALLBACK 
-CBrowsingPage::SortFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
+int CALLBACK CBrowsingPage::SortFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
 	CString str1;
 	CString	str2;
@@ -375,7 +361,6 @@ CBrowsingPage::SortFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 	ret = str1.Compare( str2 );
 
 exit:
-
 	return ret;
 }
 
@@ -399,11 +384,10 @@ void CAddBrowseDomain::DoDataExchange(CDataExchange* pDX)
 }
 
 
-BOOL
-CAddBrowseDomain::OnInitDialog()
+BOOL CAddBrowseDomain::OnInitDialog()
 {
 	CConfigPropertySheet	*	psheet;
-	CConfigPropertySheet::StringList::iterator		it;
+	StringList::iterator		it;
 	
 	BOOL b = CDialog::OnInitDialog();
 
@@ -421,19 +405,16 @@ CAddBrowseDomain::OnInitDialog()
 	}
 
 exit:
-
 	return b;
 }
 
 
-void
-CAddBrowseDomain::OnOK()
+void CAddBrowseDomain::OnOK()
 {
 	m_comboBox.GetWindowText( m_text );
 
 	CDialog::OnOK();
 }
-
 
 
 BEGIN_MESSAGE_MAP(CAddBrowseDomain, CDialog)

@@ -217,11 +217,11 @@ extern "C" {
 // Windows
 
     #if ( !defined( WIN32_WINDOWS ) )
-        #define WIN32_WINDOWS       0x0401
+        #define WIN32_WINDOWS       0x0A00
     #endif
 
     #if ( !defined( _WIN32_WINDOWS ) )
-        #define _WIN32_WINDOWS      0x0401
+        #define _WIN32_WINDOWS      0x0A00
     #endif
 
     #if ( !defined( WIN32_LEAN_AND_MEAN ) )

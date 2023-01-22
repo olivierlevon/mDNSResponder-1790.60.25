@@ -16,12 +16,11 @@
  */
 
 #include "ConfigPropertySheet.h"
-#include <WinServices.h>
+
 extern "C"
 {
-#include <ClientCommon.h>
+#include "ClientCommon.h"
 }
-#include <process.h>
 
 // Custom events
 
@@ -45,8 +44,6 @@ CConfigPropertySheet::CConfigPropertySheet()
 	AddPage(&m_firstPage );
 	AddPage(&m_secondPage);
 	AddPage(&m_thirdPage);
-
-	InitializeCriticalSection( &m_lock );
 }
 
 
@@ -56,7 +53,7 @@ CConfigPropertySheet::CConfigPropertySheet()
 
 CConfigPropertySheet::~CConfigPropertySheet()
 {
-	DeleteCriticalSection( &m_lock );
+
 }
 
 
@@ -71,8 +68,7 @@ END_MESSAGE_MAP()
 //	CConfigPropertySheet::OnInitDialog
 //---------------------------------------------------------------------------------------------------------------------------
 
-BOOL
-CConfigPropertySheet::OnInitDialog()
+BOOL CConfigPropertySheet::OnInitDialog()
 {
 	OSStatus err;
 
@@ -82,8 +78,7 @@ CConfigPropertySheet::OnInitDialog()
 	require_noerr( err, exit );
 
 exit:
-
-	return b;
+		return b;
 }
 
 
@@ -91,8 +86,7 @@ exit:
 //	CConfigPropertySheet::OnCommand
 //---------------------------------------------------------------------------------------------------------------------------
 
-BOOL
-CConfigPropertySheet::OnCommand(WPARAM wParam, LPARAM lParam)
+BOOL CConfigPropertySheet::OnCommand(WPARAM wParam, LPARAM lParam)
 {
    // Check if OK or Cancel was hit
 
@@ -109,8 +103,7 @@ CConfigPropertySheet::OnCommand(WPARAM wParam, LPARAM lParam)
 //	CConfigPropertySheet::OnDataReady
 //---------------------------------------------------------------------------------------------------------------------------
 
-LRESULT
-CConfigPropertySheet::OnDataReady(WPARAM inWParam, LPARAM inLParam)
+LRESULT CConfigPropertySheet::OnDataReady(WPARAM inWParam, LPARAM inLParam)
 {
 	if (WSAGETSELECTERROR(inLParam) && !(HIWORD(inLParam)))
 	{
@@ -134,8 +127,7 @@ CConfigPropertySheet::OnDataReady(WPARAM inWParam, LPARAM inLParam)
 //	CConfigPropertySheet::OnEndDialog
 //---------------------------------------------------------------------------------------------------------------------------
 
-void
-CConfigPropertySheet::OnEndDialog()
+void CConfigPropertySheet::OnEndDialog()
 {
 	OSStatus err;
 
@@ -148,8 +140,7 @@ CConfigPropertySheet::OnEndDialog()
 //	CConfigPropertySheet::SetupBrowsing
 //---------------------------------------------------------------------------------------------------------------------------
 
-OSStatus
-CConfigPropertySheet::SetupBrowsing()
+OSStatus CConfigPropertySheet::SetupBrowsing()
 {
 	OSStatus err;
 
@@ -176,8 +167,7 @@ exit:
 //	CConfigPropertySheet::TearDownBrowsing
 //---------------------------------------------------------------------------------------------------------------------------
 
-OSStatus
-CConfigPropertySheet::TearDownBrowsing()
+OSStatus CConfigPropertySheet::TearDownBrowsing()
 {
 	OSStatus err = kNoErr;
 
@@ -199,8 +189,7 @@ CConfigPropertySheet::TearDownBrowsing()
 //	CConfigPropertySheet::DecodeDomainName
 //---------------------------------------------------------------------------------------------------------------------------
 
-OSStatus
-CConfigPropertySheet::DecodeDomainName( const char * raw, CString & decoded )
+OSStatus CConfigPropertySheet::DecodeDomainName( const char * raw, CString & decoded )
 {
 	char nextLabel[128] = "\0";
 	char decodedDomainString[kDNSServiceMaxDomainName];
@@ -296,6 +285,5 @@ CConfigPropertySheet::BrowseDomainsReply
 	}
 
 exit:
-
 	return;
 }

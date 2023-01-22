@@ -20,15 +20,6 @@
 #include "stdafx.h"
 #include "resource.h"
 
-#include <DebugServices.h>
-#include <list>
-#include "afxcmn.h"
-
-#include "afxwin.h"
-
-
-
-
 
 //---------------------------------------------------------------------------------------------------------------------------
 //	CServicesPage
@@ -57,32 +48,16 @@ protected:
 	DECLARE_MESSAGE_MAP()
 	
 private:
-	
-	typedef std::list<CString> StringList;
+	afx_msg BOOL OnSetActive();
+	afx_msg void OnOK();
+	void SetModified( BOOL bChanged = TRUE );
+	void Commit();
 
-	afx_msg BOOL
-	OnSetActive();
-	
-	afx_msg void
-	OnOK();
-	
-	void
-	SetModified( BOOL bChanged = TRUE );
-	
-	void
-	Commit();
-
-	BOOL			m_modified;
-
-public:
-private:
-
+	BOOL	m_modified;
 	CButton m_SMBCheckBox;
 	CButton m_powerManagementCheckBox;
 
 public:
-
-
 	afx_msg void OnBnClickedAdvertiseSMB();
 	afx_msg void OnBnClickedPowerManagement();
 };
@@ -97,9 +72,7 @@ class CPowerManagementWarning : public CDialog
 	DECLARE_DYNAMIC(CPowerManagementWarning)
 
 public:
-
 	CPowerManagementWarning(CWnd* pParent = NULL);   // standard constructor
-
 	virtual ~CPowerManagementWarning();
 
 // Dialog Data
@@ -107,17 +80,13 @@ public:
 	enum { IDD = IDR_POWER_MANAGEMENT_WARNING };
 
 protected:
-
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-
 	virtual BOOL OnInitDialog();
-
 	virtual void OnOK();
 
 	DECLARE_MESSAGE_MAP()
 
 public:
-
 	CStatic m_energySaverIcon;
 };
 

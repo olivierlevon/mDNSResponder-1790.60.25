@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-#include <Secret.h>
-#include "RegistrationPage.h"
-#include "resource.h"
+#include "Secret.h"
 
+#include "stdafx.h"
+
+#include "RegistrationPage.h"
 #include "ConfigPropertySheet.h"
+
 extern "C"
 {
-#include <ClientCommon.h>
+#include "ClientCommon.h"
 }
-#include <WinServices.h>
-
-#define MAX_KEY_LENGTH 255
 
 
 IMPLEMENT_DYNCREATE(CRegistrationPage, CPropertyPage)
@@ -46,7 +45,7 @@ CRegistrationPage::CRegistrationPage()
 	//{{AFX_DATA_INIT(CRegistrationPage)
 	//}}AFX_DATA_INIT
 
-	OSStatus err;
+	LSTATUS err;
 
 	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\DynDNS\\Setup\\Hostnames", 0,
 	                      NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &m_hostnameSetupKey, NULL );
@@ -59,8 +58,6 @@ CRegistrationPage::CRegistrationPage()
 	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\DynDNS\\State\\Hostnames", 0,
 	                      NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &m_statusKey, NULL );
 	check_noerr( err );
-
-	
 }
 
 CRegistrationPage::~CRegistrationPage()
@@ -178,12 +175,10 @@ void CRegistrationPage::SetModified( BOOL bChanged )
 //	CRegistrationPage::OnSetActive
 //---------------------------------------------------------------------------------------------------------------------------
 
-BOOL
-CRegistrationPage::OnSetActive()
+BOOL CRegistrationPage::OnSetActive()
 {
 	TCHAR	name[kDNSServiceMaxDomainName + 1];
 	DWORD	nameLen = ( kDNSServiceMaxDomainName + 1 ) * sizeof( TCHAR );
-	DWORD	err;
 
 	BOOL b = CPropertyPage::OnSetActive();
 
@@ -192,8 +187,9 @@ CRegistrationPage::OnSetActive()
 	
 	if ( m_hostnameSetupKey )
 	{
-		err = RegQueryValueEx( m_hostnameSetupKey, L"", NULL, NULL, (LPBYTE) name, &nameLen );
+		LSTATUS	err;
 
+		err = RegQueryValueEx( m_hostnameSetupKey, L"", NULL, NULL, (LPBYTE) name, &nameLen );
 		if ( !err )
 		{
 			char	hostnameUTF8[ 256 ];
@@ -230,7 +226,7 @@ CRegistrationPage::OnSetActive()
 		DWORD		cSubKeys = 0;
 		DWORD		cbMaxSubKey;
 		DWORD		cchMaxClass;
-		OSStatus	err;
+		LSTATUS		err;
 
 		err = RegQueryInfoKey( m_registrationSetupKey, NULL, NULL, NULL, &cSubKeys, &cbMaxSubKey, &cchMaxClass, NULL, NULL, NULL, NULL, NULL );       
 		if ( !err )
@@ -270,8 +266,7 @@ CRegistrationPage::OnSetActive()
 //	CRegistrationPage::OnOK
 //---------------------------------------------------------------------------------------------------------------------------
 
-void
-CRegistrationPage::OnOK()
+void CRegistrationPage::OnOK()
 {
 	if ( m_modified )
 	{
@@ -284,8 +279,7 @@ CRegistrationPage::OnOK()
 //	CRegistrationPage::Commit
 //---------------------------------------------------------------------------------------------------------------------------
 
-void
-CRegistrationPage::Commit()
+void CRegistrationPage::Commit()
 {
 	CString	hostname;
 	char	hostnameUTF8[ 256 ];
@@ -295,7 +289,8 @@ CRegistrationPage::Commit()
 	char	passwordUTF8[ 256 ];
 	DWORD	enabled = 1;
 	BOOL	secret = FALSE;
-	DWORD	err;
+	DWORD		dwSize;
+	LSTATUS		err = kNoErr;
 
 	m_hostnameControl.GetWindowText( hostname );
 	hostname.MakeLower();
@@ -332,16 +327,13 @@ CRegistrationPage::Commit()
 		DWORD		cSubKeys = 0;
 		DWORD		cbMaxSubKey;
 		DWORD		cchMaxClass;
-		DWORD		dwSize;
-		int			i;
-		OSStatus	err = kNoErr;
 
 		// First, remove all the entries that are there
 
 		err = RegQueryInfoKey( m_registrationSetupKey, NULL, NULL, NULL, &cSubKeys, &cbMaxSubKey, &cchMaxClass, NULL, NULL, NULL, NULL, NULL );       
 		if ( !err )
 		{
-			for ( i = 0; i < (int) cSubKeys; i++ )
+			for ( int i = 0; i < (int) cSubKeys; i++ )
 			{	
 				dwSize = MAX_KEY_LENGTH;
 		            

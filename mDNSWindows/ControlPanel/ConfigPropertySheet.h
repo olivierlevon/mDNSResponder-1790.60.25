@@ -19,13 +19,13 @@
 #define _ConfigPropertySheet_h
 
 #include "stdafx.h"
+
 #include "ServicesPage.h"
 #include "RegistrationPage.h"
 #include "BrowsingPage.h"
 
-#include <RegNames.h>
-#include <dns_sd.h>
-#include <list>
+#include "RegNames.h"
+
 
 
 //---------------------------------------------------------------------------------------------------------------------------
@@ -38,8 +38,6 @@ public:
 
 	CConfigPropertySheet();
 	virtual ~CConfigPropertySheet();
-
-	typedef std::list<CString> StringList;
 
 	StringList	m_browseDomains;
 
@@ -98,7 +96,6 @@ private:
 	HANDLE				m_thread;
 	HANDLE				m_threadExited;
 	DNSServiceRef		m_browseDomainsRef;
-	CRITICAL_SECTION	m_lock;
 };
 
 
