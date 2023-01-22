@@ -1,0 +1,2 @@
+# list all processes listening on port 5353
+Get-NetUDPEndpoint -LocalPort 5353 | Select-Object LocalAddress,LocalPort,OwningProcess, @{ Name="Process"; Expression={((Get-Process -Id $_.OwningProcess).Name )} }

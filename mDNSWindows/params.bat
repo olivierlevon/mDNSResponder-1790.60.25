@@ -1,0 +1,2 @@
+set RC_XBS=YES
+set DSTROOT=C:
