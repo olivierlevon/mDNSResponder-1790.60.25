@@ -33,6 +33,9 @@ class ATL_NO_VTABLE CDNSSDRecord :
 {
 public:
 	CDNSSDRecord()
+		:
+		m_rref(NULL),
+		m_serviceObject(NULL)
 	{
 	}
 

@@ -24,6 +24,7 @@ typedef [ uuid(4085DD59-D0E1-4efe-B6EE-DDBF7631B9C0) ]
 enum DNSSDFlags
 {
 	kDNSSDFlagsMoreComing			= 0x0001,
+	kDNSSDFlagsAdd					= 0x0002,
 	kDNSSDFlagsDefault				= 0x0004,
 	kDNSSDFlagsNoAutoRename			= 0x0008,
 	kDNSSDFlagsShared				= 0x0010,
@@ -33,9 +34,14 @@ enum DNSSDFlags
 	kDNSSDFlagsLongLivedQuery		= 0x0100,
 	kDNSSDFlagsAllowRemoteQuery		= 0x0200,
 	kDNSSDFlagsForceMulticast		= 0x0400,
-	kDNSSDFlagsForce				= 0x0800,
+	kDNSSDFlagsKnownUnique			= 0x0800,
 	kDNSSDFlagsReturnIntermediates	= 0x1000,
-	kDNSSDFlagsNonBrowsable			= 0x2000
+	kDNSSDFlagsTimeout				= 0x10000,
+	kDNSSDFlagsWakeOnResolve		= 0x40000,
+    kDNSSDFlagsWakeOnlyService		= 0x1000000,
+    kDNSSDFlagAnsweredFromCache		= 0x40000000,
+    kDNSSDFlagsAllowExpiredAnswers	= 0x80000000,
+    kDNSSDFlagsExpiredAnswer		= 0x80000000
 } DNSSDFlags;
 
 
@@ -117,6 +123,8 @@ enum DNSSDRRType
     kDNSSDType_NSEC3     = 50,
     kDNSSDType_NSEC3PARAM= 51,
     kDNSSDType_HIP       = 55,
+    kDNSSDType_SVCB      = 64,
+    kDNSSDType_HTTPS     = 65,
     kDNSSDType_SPF       = 99,
     kDNSSDType_UINFO     = 100,
     kDNSSDType_UID       = 101,
@@ -165,7 +173,11 @@ enum DNSSDError
     kDNSSDError_NATPortMappingUnsupported = -65564,  /* NAT doesn't support PCP, NAT-PMP or UPnP */
     kDNSSDError_NATPortMappingDisabled    = -65565,  /* NAT supports PCP, NAT-PMP or UPnP, but it's disabled by the administrator */
     kDNSSDError_NoRouter                  = -65566,  /* No router currently configured (probably no network connectivity) */
-    kDNSSDError_PollingMode               = -65567
+    kDNSSDError_PollingMode               = -65567,
+    kDNSSDError_Timeout                   = -65568,
+    kDNSSDError_DefunctConnection         = -65569,  /* Connection to daemon returned a SO_ISDEFUNCT error result */
+    kDNSSDError_PolicyDenied              = -65570,
+    kDNSSDError_NotPermitted              = -65571
 } DNSSDError;
 
 

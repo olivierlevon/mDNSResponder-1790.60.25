@@ -28,8 +28,8 @@ STDMETHODIMP CDNSSDRecord::Update(DNSSDFlags flags, VARIANT rdata, ULONG ttl)
 {
 	std::vector< BYTE >	byteArray;
 	const void		*	byteArrayPtr	= NULL;
-	DNSServiceErrorType	err				= 0;
-	HRESULT				hr				= 0;
+	DNSServiceErrorType	err				= kDNSServiceErr_NoError;
+	HRESULT				hr				= S_OK;
 	BOOL				ok;
 
 	// Convert the VARIANT
@@ -47,7 +47,7 @@ exit:
 
 STDMETHODIMP CDNSSDRecord::Remove(DNSSDFlags flags)
 {
-	DNSServiceErrorType	err = 0;
+	DNSServiceErrorType	err;
 
 	err = DNSServiceRemoveRecord( m_serviceObject->GetSubordRef(), m_rref, flags );
 	require_noerr( err, exit );

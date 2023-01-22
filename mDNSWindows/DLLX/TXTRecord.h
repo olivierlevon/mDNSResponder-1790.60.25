@@ -93,10 +93,10 @@ public:
 
 	void
 	SetBytes
-		(
+	(
 		const unsigned char	*	bytes,
 		uint16_t				len
-		);
+	);
 };
 
 OBJECT_ENTRY_AUTO(__uuidof(TXTRecord), CTXTRecord)

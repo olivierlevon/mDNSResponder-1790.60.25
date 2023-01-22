@@ -40,10 +40,11 @@ CDNSSDService::SocketMap	CDNSSDService::m_socketMap;
 
 HRESULT CDNSSDService::FinalConstruct()
 {
-	DNSServiceErrorType	err	= 0;
+	DNSServiceErrorType	err	= kDNSServiceErr_NoError;
 	HRESULT				hr	= S_OK;
 
 	m_isPrimary = TRUE;
+
 	err = DNSServiceCreateConnection( &m_primary );
 	require_action( !err, exit, hr = E_FAIL );
 
@@ -101,8 +102,7 @@ STDMETHODIMP CDNSSDService::EnumerateDomains(DNSSDFlags flags, ULONG ifIndex, ID
 {
 	CComObject<CDNSSDService>	*	object	= NULL;
 	DNSServiceRef					subord	= NULL;
-	DNSServiceErrorType				err		= 0;
-	HRESULT							hr		= 0;
+	DNSServiceErrorType				err		= kDNSServiceErr_NoError;
 
 	check( m_primary );
 
@@ -148,8 +148,7 @@ STDMETHODIMP CDNSSDService::Browse(DNSSDFlags flags, ULONG ifIndex, BSTR regtype
 	std::string						regtypeUTF8;
 	std::string						domainUTF8;
 	DNSServiceRef					subord		= NULL;
-	DNSServiceErrorType				err			= 0;
-	HRESULT							hr			= 0;
+	DNSServiceErrorType				err			= kDNSServiceErr_NoError;
 	BOOL							ok;
 
 	check( m_primary );
@@ -187,8 +186,6 @@ STDMETHODIMP CDNSSDService::Browse(DNSSDFlags flags, ULONG ifIndex, BSTR regtype
 
 exit:
 
-
-
 	if ( err && object )
 	{
 		object->Release();
@@ -205,8 +202,7 @@ STDMETHODIMP CDNSSDService::Resolve(DNSSDFlags flags, ULONG ifIndex, BSTR servic
 	std::string						regTypeUTF8;
 	std::string						domainUTF8;
 	DNSServiceRef					subord			= NULL;
-	DNSServiceErrorType				err				= 0;
-	HRESULT							hr				= 0;
+	DNSServiceErrorType				err				= kDNSServiceErr_NoError;
 	BOOL							ok;
 
 	check( m_primary );
@@ -265,8 +261,7 @@ STDMETHODIMP CDNSSDService::Register(DNSSDFlags flags, ULONG ifIndex, BSTR servi
 	const void					*	txtRecord		= NULL;
 	uint16_t						txtLen			= 0;
 	DNSServiceRef					subord			= NULL;
-	DNSServiceErrorType				err				= 0;
-	HRESULT							hr				= 0;
+	DNSServiceErrorType				err				= kDNSServiceErr_NoError;
 	BOOL							ok;
 
 	check( m_primary );
@@ -331,8 +326,7 @@ STDMETHODIMP CDNSSDService::QueryRecord(DNSSDFlags flags, ULONG ifIndex, BSTR fu
 	CComObject<CDNSSDService>	*	object			= NULL;
 	DNSServiceRef					subord			= NULL;
 	std::string						fullNameUTF8;
-	DNSServiceErrorType				err				= 0;
-	HRESULT							hr				= 0;
+	DNSServiceErrorType				err				= kDNSServiceErr_NoError;
 	BOOL							ok;
 
 	check( m_primary );
@@ -384,8 +378,7 @@ STDMETHODIMP CDNSSDService::RegisterRecord(DNSSDFlags flags, ULONG ifIndex, BSTR
 	std::string						fullNameUTF8;
 	std::vector< BYTE >				byteArray;
 	const void					*	byteArrayPtr	= NULL;
-	DNSServiceErrorType				err				= 0;
-	HRESULT							hr				= 0;
+	DNSServiceErrorType				err				= kDNSServiceErr_NoError;
 	BOOL							ok;
 
 	check( m_primary );
@@ -439,8 +432,7 @@ STDMETHODIMP CDNSSDService::AddRecord(DNSSDFlags flags, DNSSDRRType rrtype, VARI
 	DNSRecordRef					rref			= NULL;
 	std::vector< BYTE >				byteArray;
 	const void					*	byteArrayPtr	= NULL;
-	DNSServiceErrorType				err				= 0;
-	HRESULT							hr				= 0;
+	DNSServiceErrorType				err				= kDNSServiceErr_NoError;
 	BOOL							ok;
 
 	check( m_primary );
@@ -487,8 +479,7 @@ STDMETHODIMP CDNSSDService::ReconfirmRecord(DNSSDFlags flags, ULONG ifIndex, BST
 	std::string						fullNameUTF8;
 	std::vector< BYTE >				byteArray;
 	const void					*	byteArrayPtr	= NULL;
-	DNSServiceErrorType				err				= 0;
-	HRESULT							hr				= 0;
+	DNSServiceErrorType				err				= kDNSServiceErr_NoError;
 	BOOL							ok;
 
 	// Convert BSTR params to utf8
@@ -515,7 +506,7 @@ STDMETHODIMP CDNSSDService::GetProperty(BSTR prop, VARIANT * value )
 	SAFEARRAY		*	psa			= NULL;
 	BYTE			*	pData		= NULL;
 	uint32_t			elems		= 0;
-	DNSServiceErrorType	err			= 0;
+	DNSServiceErrorType	err			= kDNSServiceErr_NoError;
 	BOOL				ok = TRUE;
 
 	// Convert BSTR params to utf8
@@ -554,8 +545,7 @@ STDMETHODIMP CDNSSDService::GetAddrInfo(DNSSDFlags flags, ULONG ifIndex, DNSSDAd
 	CComObject<CDNSSDService>	*	object			= NULL;
 	DNSServiceRef					subord			= NULL;
 	std::string						hostNameUTF8;
-	DNSServiceErrorType				err				= 0;
-	HRESULT							hr				= 0;
+	DNSServiceErrorType				err				= kDNSServiceErr_NoError;
 	BOOL							ok;
 
 	check( m_primary );
@@ -604,8 +594,7 @@ STDMETHODIMP CDNSSDService::NATPortMappingCreate(DNSSDFlags flags, ULONG ifIndex
 	CComObject<CDNSSDService>	*	object			= NULL;
 	DNSServiceRef					subord			= NULL;
 	DNSServiceProtocol				prot			= 0;
-	DNSServiceErrorType				err				= 0;
-	HRESULT							hr				= 0;
+	DNSServiceErrorType				err				= kDNSServiceErr_NoError;
 
 	check( m_primary );
 
@@ -948,8 +937,8 @@ CDNSSDService::GetAddrInfoReply
 	if ( service->ShouldHandleReply( errorCode, eventManager ) )
 	{
 		CComBSTR			hostName;
-		DWORD				sockaddrLen;
-		DNSSDAddressFamily	addressFamily;
+		DWORD				sockaddrLen = 0;
+		DNSSDAddressFamily	addressFamily = kDNSSDAddressFamily_IPv4;
 		char				addressUTF8[INET6_ADDRSTRLEN];
 		DWORD				addressLen = sizeof( addressUTF8 );
 		CComBSTR			address;
@@ -977,6 +966,7 @@ CDNSSDService::GetAddrInfoReply
 
 		err = WSAAddressToStringA( ( LPSOCKADDR ) rawAddress, sockaddrLen, NULL, addressUTF8, &addressLen );
 		require_noerr( err, exit );
+
 		ok = UTF8ToBSTR( addressUTF8, address );
 		require_action( ok, exit, err = kDNSServiceErr_Unknown );
 
