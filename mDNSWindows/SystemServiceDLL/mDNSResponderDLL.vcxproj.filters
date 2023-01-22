@@ -42,13 +42,10 @@
     <ClInclude Include="..\Poll.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\Secret.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Service.h">
+    <ClInclude Include="..\SystemService\Service.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\mDNSCore\uDNS.h">
@@ -67,6 +64,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\RegNames.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SystemService\Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -89,7 +89,7 @@
     <ClCompile Include="..\..\mDNSShared\dnssd_ipc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Firewall.cpp">
+    <ClCompile Include="..\SystemService\Firewall.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\mDNSShared\GenLinkedList.c">
@@ -113,7 +113,7 @@
     <ClCompile Include="..\Secret.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Service.c">
+    <ClCompile Include="..\SystemService\Service.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\mDNSCore\uDNS.c">
@@ -127,11 +127,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="EventLog.mc">
-      <Filter>Source Files</Filter>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="exports.def">
       <Filter>Source Files</Filter>
     </None>
@@ -140,5 +135,10 @@
     <ResourceCompile Include="Service.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="EventLog.mc">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

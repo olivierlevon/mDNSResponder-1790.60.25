@@ -28,13 +28,14 @@
 
 #include "DLLStub.h"
 
-static int		g_defaultErrorCode = kDNSServiceErr_ServiceNotRunning;
-static DLLStub	g_glueLayer;
+static DNSServiceErrorType		g_defaultErrorCode = kDNSServiceErr_ServiceNotRunning;
+//static DLLStub	g_glueLayer;
 
 
 // ------------------------------------------
 // DLLStub implementation
 // ------------------------------------------
+
 DLLStub * DLLStub::m_instance;
 
 DLLStub::DLLStub()
@@ -47,13 +48,13 @@ DLLStub::DLLStub()
 
 DLLStub::~DLLStub()
 {
-	if ( m_library != NULL )
+	if ( m_library != nullptr )
 	{
 		FreeLibrary( m_library );
-		m_library = NULL;
+		m_library = nullptr;
 	}
 
-	m_instance = NULL;
+	m_instance = nullptr;
 }
 
 
@@ -62,30 +63,30 @@ DLLStub::GetProcAddress( FARPROC * func, LPCSTR lpProcName )
 { 
 	if ( m_instance && m_instance->m_library )
 	{
-		// Only call ::GetProcAddress if *func is NULL. This allows
+		// Only call ::GetProcAddress if *func is nullptr. This allows
 		// the calling code to cache the funcptr value, and we get
 		// some performance benefit.
 
-		if ( *func == NULL )
+		if ( *func == nullptr )
 		{
 			*func = ::GetProcAddress( m_instance->m_library, lpProcName );
 		}
 	}
 	else
 	{
-		*func = NULL;
+		*func = nullptr;
 	}
 
-	return ( *func != NULL );
+	return ( *func != nullptr );
 }
 
 
 dnssd_sock_t DNSSD_API
 DNSServiceRefSockFD(DNSServiceRef sdRef)
 {
-	typedef int (DNSSD_API * Func)(DNSServiceRef sdRef);
-	static Func func = NULL;
-	int ret = INVALID_SOCKET;
+	typedef dnssd_sock_t(DNSSD_API * Func)(DNSServiceRef sdRef);
+	static Func func = nullptr;
+	SOCKET ret = INVALID_SOCKET;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
 	{
@@ -100,7 +101,7 @@ DNSServiceErrorType DNSSD_API
 DNSServiceProcessResult(DNSServiceRef sdRef)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef sdRef);
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -116,7 +117,7 @@ void DNSSD_API
 DNSServiceRefDeallocate(DNSServiceRef sdRef)
 {
 	typedef void (DNSSD_API * Func)(DNSServiceRef sdRef);
-	static Func func = NULL;
+	static Func func = nullptr;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
 	{
@@ -136,7 +137,7 @@ DNSServiceEnumerateDomains
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef*, DNSServiceFlags, uint32_t, DNSServiceDomainEnumReply, void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -166,7 +167,7 @@ DNSServiceRegister
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef*, DNSServiceFlags, uint32_t, const char*, const char*, const char*, const char*, uint16_t, uint16_t, const void*, DNSServiceRegisterReply, void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -191,7 +192,7 @@ DNSServiceAddRecord
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef, DNSRecordRef*, DNSServiceFlags, uint16_t, uint16_t, const void*, uint32_t );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -207,7 +208,7 @@ DNSServiceErrorType DNSSD_API
 DNSServiceUpdateRecord
 		(
 		DNSServiceRef                       sdRef,
-		DNSRecordRef                        RecordRef,     /* may be NULL */
+		DNSRecordRef                        RecordRef,     /* may be nullptr */
 		DNSServiceFlags                     flags,
 		uint16_t                            rdlen,
 		const void                          *rdata,
@@ -215,7 +216,7 @@ DNSServiceUpdateRecord
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef, DNSRecordRef, DNSServiceFlags, uint16_t, const void*, uint32_t );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -236,7 +237,7 @@ DNSServiceRemoveRecord
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef, DNSRecordRef, DNSServiceFlags );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -255,13 +256,13 @@ DNSServiceBrowse
 		DNSServiceFlags                     flags,
 		uint32_t                            interfaceIndex,
 		const char                          *regtype,
-		const char                          *domain,    /* may be NULL */
+		const char                          *domain,    /* may be nullptr */
 		DNSServiceBrowseReply               callBack,
-		void                                *context    /* may be NULL */
+		void                                *context    /* may be nullptr */
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef*, DNSServiceFlags, uint32_t, const char*, const char*, DNSServiceBrowseReply, void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -283,11 +284,11 @@ DNSServiceResolve
 		const char                          *regtype,
 		const char                          *domain,
 		DNSServiceResolveReply              callBack,
-		void                                *context  /* may be NULL */
+		void                                *context  /* may be nullptr */
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef*, DNSServiceFlags, uint32_t, const char*, const char*, const char*, DNSServiceResolveReply, void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -303,13 +304,13 @@ DNSServiceErrorType DNSSD_API
 DNSServiceConstructFullName
 		(
 		char                            *fullName,
-		const char                      *service,      /* may be NULL */
+		const char                      *service,      /* may be nullptr */
 		const char                      *regtype,
 		const char                      *domain
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)( char*, const char*, const char*, const char* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -325,7 +326,7 @@ DNSServiceErrorType DNSSD_API
 DNSServiceCreateConnection(DNSServiceRef *sdRef)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)( DNSServiceRef* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -351,11 +352,11 @@ DNSServiceRegisterRecord
 		const void                          *rdata,
 		uint32_t                            ttl,
 		DNSServiceRegisterRecordReply       callBack,
-		void                                *context    /* may be NULL */
+		void                                *context    /* may be nullptr */
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef, DNSRecordRef*, DNSServiceFlags, uint32_t, const char*, uint16_t, uint16_t, uint16_t, const void*, uint16_t, DNSServiceRegisterRecordReply, void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -377,11 +378,11 @@ DNSServiceQueryRecord
 		uint16_t                            rrtype,
 		uint16_t                            rrclass,
 		DNSServiceQueryRecordReply          callBack,
-		void                                *context  /* may be NULL */
+		void                                *context  /* may be nullptr */
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef*, DNSServiceFlags, uint32_t, const char*, uint16_t, uint16_t, DNSServiceQueryRecordReply, void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -406,7 +407,7 @@ DNSServiceReconfirmRecord
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)( DNSServiceFlags, uint32_t, const char*, uint16_t, uint16_t, uint16_t, const void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -429,11 +430,11 @@ DNSServiceNATPortMappingCreate
 		uint16_t                         externalPort,      /* network byte order      */
 		uint32_t                         ttl,               /* time to live in seconds */
 		DNSServiceNATPortMappingReply    callBack,
-		void                             *context           /* may be NULL             */
+		void                             *context           /* may be nullptr             */
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef*, DNSServiceFlags, uint32_t, DNSServiceProtocol, uint16_t, uint16_t, uint16_t, DNSServiceNATPortMappingReply, void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -454,11 +455,11 @@ DNSServiceGetAddrInfo
 		DNSServiceProtocol               protocol,
 		const char                       *hostname,
 		DNSServiceGetAddrInfoReply       callBack,
-		void                             *context          /* may be NULL */
+		void                             *context          /* may be nullptr */
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)(DNSServiceRef*, DNSServiceFlags, uint32_t, DNSServiceProtocol, const char*, DNSServiceGetAddrInfoReply, void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -479,7 +480,7 @@ DNSServiceGetProperty
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)( const char*, void*, uint32_t* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -500,7 +501,7 @@ TXTRecordCreate
 		)
 {
 	typedef void (DNSSD_API * Func)( TXTRecordRef*, uint16_t, void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
 	{
@@ -516,7 +517,7 @@ TXTRecordDeallocate
 		)
 {
 	typedef void (DNSSD_API * Func)( TXTRecordRef* );
-	static Func func = NULL;
+	static Func func = nullptr;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
 	{
@@ -531,11 +532,11 @@ TXTRecordSetValue
 		TXTRecordRef     *txtRecord,
 		const char       *key,
 		uint8_t          valueSize,        /* may be zero */
-		const void       *value            /* may be NULL */
+		const void       *value            /* may be nullptr */
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)( TXTRecordRef*, const char*, uint8_t, const void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -555,7 +556,7 @@ TXTRecordRemoveValue
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)( TXTRecordRef*, const char* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -576,7 +577,7 @@ TXTRecordContainsKey
 		)
 {
 	typedef int (DNSSD_API * Func)( uint16_t, const void*, const char* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	int ret = 0;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -596,7 +597,7 @@ TXTRecordGetCount
 		)
 {
 	typedef uint16_t (DNSSD_API * Func)( uint16_t, const void* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	uint16_t ret = 0;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -615,7 +616,7 @@ TXTRecordGetLength
 		)
 {
 	typedef uint16_t (DNSSD_API * Func)( const TXTRecordRef* );
-	static Func func = NULL;
+	static Func func = nullptr;
 	uint16_t ret = 0;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
@@ -634,8 +635,8 @@ TXTRecordGetBytesPtr
 		)
 {
 	typedef const void* (DNSSD_API * Func)( const TXTRecordRef* );
-	static Func func = NULL;
-	const void* ret = NULL;
+	static Func func = nullptr;
+	const void* ret = nullptr;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
 	{
@@ -656,8 +657,8 @@ TXTRecordGetValuePtr
 		)
 {
 	typedef const void* (DNSSD_API * Func)( uint16_t, const void*, const char*, uint8_t* );
-	static Func func = NULL;
-	const void* ret = NULL;
+	static Func func = nullptr;
+	const void* ret = nullptr;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )
 	{
@@ -681,7 +682,7 @@ TXTRecordGetItemAtIndex
 		)
 {
 	typedef DNSServiceErrorType (DNSSD_API * Func)( uint16_t, const void*, uint16_t, uint16_t, char*, uint8_t*, const void** );
-	static Func func = NULL;
+	static Func func = nullptr;
 	DNSServiceErrorType ret = g_defaultErrorCode;
 
 	if ( DLLStub::GetProcAddress( ( FARPROC* ) &func, __FUNCTION__ ) )

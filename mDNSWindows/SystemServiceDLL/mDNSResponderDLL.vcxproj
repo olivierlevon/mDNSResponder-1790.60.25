@@ -110,7 +110,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;../;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;../;../SystemService;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32_CENTENNIAL;WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x0A00;DEBUG=1;MDNS_DEBUGMSGS=0;TARGET_OS_WIN32;WIN32_LEAN_AND_MEAN;USE_TCP_LOOPBACK;PLATFORM_NO_STRSEP;PLATFORM_NO_EPIPE;PLATFORM_NO_RLIMIT;PID_FILE="";UNICODE;_UNICODE;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1;_LEGACY_NAT_TRAVERSAL_;_WINSOCK_DEPRECATED_NO_WARNINGS;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>
@@ -131,7 +131,7 @@
       </PrecompiledHeaderOutputFile>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../SystemService;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;crypt32.lib;netapi32.lib;powrprof.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -146,7 +146,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;../;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;../;../SystemService;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32_CENTENNIAL;WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x0A00;DEBUG=1;MDNS_DEBUGMSGS=0;TARGET_OS_WIN32;WIN32_LEAN_AND_MEAN;USE_TCP_LOOPBACK;PLATFORM_NO_STRSEP;PLATFORM_NO_EPIPE;PLATFORM_NO_RLIMIT;PID_FILE="";UNICODE;_UNICODE;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1;_LEGACY_NAT_TRAVERSAL_;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>
@@ -161,7 +161,7 @@
       <DisableSpecificWarnings>4127;4201;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../SystemService;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;crypt32.lib;netapi32.lib;powrprof.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -174,7 +174,7 @@
     <Midl />
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;../;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;../;../SystemService;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32_CENTENNIAL;WIN32;_DEBUG;_CONSOLE;_WIN32_WINNT=0x0A00;DEBUG=1;MDNS_DEBUGMSGS=0;TARGET_OS_WIN32;WIN32_LEAN_AND_MEAN;USE_TCP_LOOPBACK;PLATFORM_NO_STRSEP;PLATFORM_NO_EPIPE;PLATFORM_NO_RLIMIT;PID_FILE="";UNICODE;_UNICODE;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1;_LEGACY_NAT_TRAVERSAL_;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>
@@ -189,7 +189,7 @@
       <DisableSpecificWarnings>4127;4201;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../SystemService;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;crypt32.lib;netapi32.lib;powrprof.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -199,7 +199,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;../;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;../;../SystemService;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32_CENTENNIAL;WIN32;NDEBUG;_CONSOLE;_WIN32_WINNT=0x0A00;TARGET_OS_WIN32;WIN32_LEAN_AND_MEAN;USE_TCP_LOOPBACK;PLATFORM_NO_STRSEP;PLATFORM_NO_EPIPE;PLATFORM_NO_RLIMIT;PID_FILE="";UNICODE;_UNICODE;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1;_LEGACY_NAT_TRAVERSAL_;_WINSOCK_DEPRECATED_NO_WARNINGS;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -209,7 +209,7 @@
       <DisableSpecificWarnings>4127;4201;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../SystemService;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;crypt32.lib;netapi32.lib;powrprof.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -225,7 +225,7 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>.;../;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;../;../SystemService;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32_CENTENNIAL;WIN32;NDEBUG;_CONSOLE;_WIN32_WINNT=0x0A00;TARGET_OS_WIN32;WIN32_LEAN_AND_MEAN;USE_TCP_LOOPBACK;PLATFORM_NO_STRSEP;PLATFORM_NO_EPIPE;PLATFORM_NO_RLIMIT;PID_FILE="";UNICODE;_UNICODE;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1;_LEGACY_NAT_TRAVERSAL_;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -234,7 +234,7 @@
       <DisableSpecificWarnings>4127;4201;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../SystemService;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;netapi32.lib;powrprof.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -248,7 +248,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <Midl />
     <ClCompile>
-      <AdditionalIncludeDirectories>.;../;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;../;../SystemService;../../mDNSCore;../../mDNSShared;../../mDNSShared/utilities;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32_CENTENNIAL;WIN32;NDEBUG;_CONSOLE;_WIN32_WINNT=0x0A00;TARGET_OS_WIN32;WIN32_LEAN_AND_MEAN;USE_TCP_LOOPBACK;PLATFORM_NO_STRSEP;PLATFORM_NO_EPIPE;PLATFORM_NO_RLIMIT;PID_FILE="";UNICODE;_UNICODE;_CRT_SECURE_NO_DEPRECATE;_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES=1;_LEGACY_NAT_TRAVERSAL_;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -257,7 +257,7 @@
       <DisableSpecificWarnings>4127;4201;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../SystemService;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;netapi32.lib;powrprof.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -284,8 +284,8 @@
     <ClInclude Include="..\RegNames.h" />
     <ClInclude Include="..\Secret.h" />
     <ClInclude Include="mDNSResponderLib.h" />
-    <ClInclude Include="Resource.h" />
-    <ClInclude Include="Service.h" />
+    <ClInclude Include="..\SystemService\Resource.h" />
+    <ClInclude Include="..\SystemService\Service.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\mDNSCore\DNSCommon.c" />
@@ -304,29 +304,29 @@
     <ClCompile Include="..\Secret.c" />
     <ClCompile Include="..\VisualStudioSupport.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="Firewall.cpp" />
-    <ClCompile Include="Service.c">
-      <AdditionalIncludeDirectories>.;../;../../mDNSCore;../../mDNSShared;$(IntDir);%(AdditionalIncludeDirectories);$(VcpkgRoot)include</AdditionalIncludeDirectories>
+    <ClCompile Include="..\SystemService\Firewall.cpp" />
+    <ClCompile Include="..\SystemService\Service.c">
+      <AdditionalIncludeDirectories>.;../;../SystemService;../../mDNSCore;../../mDNSShared;$(IntDir);%(AdditionalIncludeDirectories);$(VcpkgRoot)include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="EventLog.mc">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling Message Resource</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">mc.exe -h $(IntDir) -r $(IntDir) EventLog.mc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">mc.exe -h $(IntDir) -r $(IntDir) ..\SystemService\EventLog.mc</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)EventLog.rc;$(IntDir)EventLog.h;%(Outputs)</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling Message Resource</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Compiling Message Resource</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mc.exe -h $(IntDir) -r $(IntDir) EventLog.mc</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">mc.exe -h $(IntDir) -r $(IntDir) EventLog.mc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mc.exe -h $(IntDir) -r $(IntDir) ..\SystemService\EventLog.mc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">mc.exe -h $(IntDir) -r $(IntDir) ..\SystemService\EventLog.mc</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)EventLog.rc;$(IntDir)EventLog.h;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(IntDir)EventLog.rc;$(IntDir)EventLog.h;%(Outputs)</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling Message Resource</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mc.exe -h $(IntDir) -r $(IntDir) EventLog.mc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mc.exe -h $(IntDir) -r $(IntDir) ..\SystemService\EventLog.mc</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)EventLog.rc;$(IntDir)EventLog.h;%(Outputs)</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compiling Message Resource</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Compiling Message Resource</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mc.exe -h $(IntDir) -r $(IntDir) EventLog.mc</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">mc.exe -h $(IntDir) -r $(IntDir) EventLog.mc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mc.exe -h $(IntDir) -r $(IntDir) ..\SystemService\EventLog.mc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">mc.exe -h $(IntDir) -r $(IntDir) ..\SystemService\EventLog.mc</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)EventLog.rc;$(IntDir)EventLog.h;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(IntDir)EventLog.rc;$(IntDir)EventLog.h;%(Outputs)</Outputs>
     </CustomBuild>

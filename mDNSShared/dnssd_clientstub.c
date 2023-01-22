@@ -747,7 +747,11 @@ static DNSServiceErrorType ConnectToServer(DNSServiceRef *ref, DNSServiceFlags f
         #if defined(USE_TCP_LOOPBACK)
         saddr.sin_family      = AF_INET;
         saddr.sin_addr.s_addr = inet_addr(MDNS_TCP_SERVERADDR);
+#ifdef WIN32_CENTENNIAL
         saddr.sin_port        = IsSystemServiceDisabled() ? htons(MDNS_TCP_SERVERPORT_CENTENNIAL) : htons(MDNS_TCP_SERVERPORT);
+#else
+        saddr.sin_port        = htons(MDNS_TCP_SERVERPORT);
+#endif
         #else
         saddr.sun_family      = AF_LOCAL;
         SetUDSPath(&saddr, uds_serverpath);

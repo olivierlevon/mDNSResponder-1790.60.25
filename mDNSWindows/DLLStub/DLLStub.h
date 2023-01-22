@@ -30,7 +30,7 @@
 #define _DLLStub_h
 
 #include <windows.h>
-#include <dns_sd.h>
+#include "dns_sd.h"
 
 class DLLStub
 {
@@ -39,14 +39,12 @@ public:
 	DLLStub();
 	~DLLStub();
 
-	static bool
-	GetProcAddress( FARPROC * func, LPCSTR lpProcName );
+	static bool	GetProcAddress( FARPROC * func, LPCSTR lpProcName );
 
 private:
 
 	static DLLStub	*	m_instance;
 	HMODULE				m_library;
 };
-
 
 #endif
