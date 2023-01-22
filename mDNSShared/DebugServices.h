@@ -58,7 +58,7 @@
     #define __ROUTINE__                 __func__
 #elif ( defined( __GNUC__ ) )
     #define __ROUTINE__                 __PRETTY_FUNCTION__
-#elif ( defined( _MSC_VER ) && !defined( _WIN32_WCE ) )
+#elif ( defined( _MSC_VER ) )
     #define __ROUTINE__                 __FUNCTION__
 #else
     #define __ROUTINE__                 ""

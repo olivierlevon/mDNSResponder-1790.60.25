@@ -20,9 +20,7 @@
 
 #include	"CommonServices.h"
 
-#if( !defined( _WIN32_WCE ) )
-	#include	<mswsock.h>
-#endif
+#include	<mswsock.h>
 
 #include	"mDNSEmbeddedAPI.h"
 #include	"uDNS.h"
