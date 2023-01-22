@@ -1,0 +1,36 @@
+# Bonjour's AppVeyor integration file
+# Used to build Windows platform version of Bonjour
+
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+version: 1790.60.25b{build}
+
+branches:
+  only:
+    - master
+
+skip_commits:
+  files:
+    - README*
+    - LICENSE*
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+image: Visual Studio 2022
+
+configuration: Release
+
+platform: x86
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+build:
+  parallel: true                 # enable MSBuild parallel builds
+  project: mDNSWindows\SystemService\Service.vcxproj
+  verbosity: minimal
