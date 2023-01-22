@@ -16,16 +16,9 @@
  */
 
 
-
 #include "stdafx.h"
 
 #include "DNSSDEventManager.h"
 
-
-
-
-
 // CDNSSDEventManager
-
-
 

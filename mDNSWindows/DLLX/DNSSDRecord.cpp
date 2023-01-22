@@ -16,86 +16,44 @@
  */
 
 
-
 #include "stdafx.h"
 
 #include "DNSSDRecord.h"
-
 #include "StringServices.h"
-
-#include <DebugServices.h>
-
-
-
 
 
 // CDNSSDRecord
 
-
-
 STDMETHODIMP CDNSSDRecord::Update(DNSSDFlags flags, VARIANT rdata, ULONG ttl)
-
 {
-
 	std::vector< BYTE >	byteArray;
-
 	const void		*	byteArrayPtr	= NULL;
-
 	DNSServiceErrorType	err				= 0;
-
 	HRESULT				hr				= 0;
-
 	BOOL				ok;
 
-
-
 	// Convert the VARIANT
-
 	ok = VariantToByteArray( &rdata, byteArray );
-
 	require_action( ok, exit, err = kDNSServiceErr_Unknown );
 
-
-
 	err = DNSServiceUpdateRecord( m_serviceObject->GetSubordRef(), m_rref, flags, ( uint16_t ) byteArray.size(), byteArray.size() > 0 ? &byteArray[ 0 ] : NULL, ttl );
-
 	require_noerr( err, exit );
-
-
 
 exit:
 
-
-
 	return err;
-
 }
-
-
-
 
 
 STDMETHODIMP CDNSSDRecord::Remove(DNSSDFlags flags)
-
 {
-
 	DNSServiceErrorType	err = 0;
 
-
-
 	err = DNSServiceRemoveRecord( m_serviceObject->GetSubordRef(), m_rref, flags );
-
 	require_noerr( err, exit );
-
-
 
 exit:
 
-
-
 	return err;
-
 }
-
-
 

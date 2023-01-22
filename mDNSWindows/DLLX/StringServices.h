@@ -16,87 +16,41 @@
  */
 
 
-
 #ifndef _StringServices_h
-
 #define _StringServices_h
 
-
-
 #include <atlbase.h>
-
 #include <vector>
-
 #include <string>
 
 
-
-
-
 extern BOOL
-
 BSTRToUTF8
-
 	(
-
 	BSTR			inString,
-
 	std::string	&	outString
-
 	);
 
-
-
-
-
 extern BOOL
-
 UTF8ToBSTR
-
 	(
-
 	const char	*	inString,
-
 	CComBSTR	&	outString
-
 	);
 
-
-
-
-
 extern BOOL
-
 ByteArrayToVariant
-
 	(
-
 	const void	*	inArray,
-
 	size_t			inArrayLen,
-
 	VARIANT		*	outVariant
-
 	);
-
-
-
-
 
 extern BOOL
-
 VariantToByteArray
-
 	(
-
 	VARIANT				*	inVariant,
-
 	std::vector< BYTE >	&	outArray
-
 	);
-
-
-
-
 
 #endif
