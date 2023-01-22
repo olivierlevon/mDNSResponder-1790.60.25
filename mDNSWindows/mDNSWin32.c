@@ -74,7 +74,6 @@
 #endif
 #define	MDNS_WINDOWS_ENABLE_IPV4					1
 #define	MDNS_WINDOWS_ENABLE_IPV6					1
-#define	MDNS_FIX_IPHLPAPI_PREFIX_BUG				1
 #define MDNS_SET_HINFO_STRINGS						0
 
 #define	kMDNSDefaultName							"My Computer"
@@ -87,7 +86,6 @@
 
 static GUID											kWSARecvMsgGUID = WSAID_WSARECVMSG;
 
-#define kIPv6IfIndexBase							(10000000L)
 #define SMBPortAsNumber								445
 #define DEVICE_PREFIX								"\\\\.\\"
 
@@ -204,7 +202,7 @@ mDNSlocal mDNS_PlatformSupport	gMDNSPlatformSupport;
 mDNSs32							mDNSPlatformOneSecond	= 0;
 mDNSlocal UDPSocket		*		gUDPSockets				= NULL;
 mDNSlocal int					gUDPNumSockets			= 0;
-mDNSlocal BOOL					gEnableIPv6				= TRUE;
+
 
 #if( MDNS_WINDOWS_USE_IPV6_IF_ADDRS )
 
@@ -291,27 +289,6 @@ mDNSexport mStatus	mDNSPlatformInit( mDNS * const inMDNS )
 	require_action( inMDNS->p->checkFileSharesTimer, exit, err = mStatus_UnknownErr );
 	inMDNS->p->checkFileSharesTimeout		= 10;		// Retry time for CheckFileShares() in seconds
 	mDNSPlatformOneSecond 					= 1000;		// Use milliseconds as the quantum of time
-	
-#ifndef WIN32_CENTENNIAL
-	// Get OS version info
-	
-	osInfo.dwOSVersionInfoSize = sizeof( OSVERSIONINFO );
-	ok = GetVersionEx( &osInfo );
-	err = translate_errno( ok, (OSStatus) GetLastError(), kUnknownErr );
-	require_noerr( err, exit );
-	inMDNS->p->osMajorVersion = osInfo.dwMajorVersion;
-	inMDNS->p->osMinorVersion = osInfo.dwMinorVersion;
-	
-	// Don't enable IPv6 on anything less recent than Windows Vista
-
-	if ( inMDNS->p->osMajorVersion < 6 )
-	{
-		gEnableIPv6 = FALSE;
-	}
-#else
-	inMDNS->p->osMajorVersion = 6;
-	inMDNS->p->osMinorVersion = 3;
-#endif
 
 	// Startup WinSock 2.2 or later.
 	
@@ -379,7 +356,6 @@ mDNSexport mStatus	mDNSPlatformInit( mDNS * const inMDNS )
 
 #if ( MDNS_WINDOWS_ENABLE_IPV6 )
 
-	if ( gEnableIPv6 )
 	{
 		sa6.sin6_family		= AF_INET6;
 		sa6.sin6_addr		= in6addr_any;
@@ -507,10 +483,7 @@ mDNSexport void	mDNSPlatformClose( mDNS * const inMDNS )
 	
 #if ( MDNS_WINDOWS_ENABLE_IPV6 )
 
-	if ( gEnableIPv6 )
-	{
-		UDPCloseSocket( &inMDNS->p->unicastSock6 );
-	}
+	UDPCloseSocket( &inMDNS->p->unicastSock6 );
 
 #endif
 
@@ -2496,7 +2469,6 @@ mStatus	SetupInterfaceList( mDNS * const inMDNS )
 	
 #if( MDNS_WINDOWS_ENABLE_IPV6 )
 
-	if ( gEnableIPv6 )
 	{
 		for( p = addrs; p; p = p->ifa_next )
 		{
@@ -2611,10 +2583,9 @@ mStatus	SetupInterfaceList( mDNS * const inMDNS )
 		
 #if( MDNS_WINDOWS_ENABLE_IPV6 )
 
-		if ( gEnableIPv6 )
 		{
 			// If we're on a platform that doesn't have WSARecvMsg(), there's no way
-			// of determing the destination address of a packet that is sent to us.
+			// of determining the destination address of a packet that is sent to us.
 			// For multicast packets, that's easy to determine.  But for the unicast
 			// sockets, we'll fake it by taking the address of the first interface
 			// that is successfully setup.
@@ -3283,7 +3254,7 @@ UDPSocketNotification( SOCKET sock, LPWSANETWORKEVENTS event, void *context )
 		
 					if ( udpSock->ifd != NULL )
 					{
-						require_action( ipv6PacketInfo->ipi6_ifindex == ( udpSock->ifd->index - kIPv6IfIndexBase ), exit, err = ( DWORD ) kMismatchErr );
+						require_action( ipv6PacketInfo->ipi6_ifindex == udpSock->ifd->index, exit, err = ( DWORD ) kMismatchErr );
 					}
 
 					dstAddr.type	= mDNSAddrType_IPv6;
@@ -3627,25 +3598,11 @@ mDNSlocal int	getifaddrs_ipv6( struct ifaddrs **outAddrs )
 			if( iaa->IfType == IF_TYPE_SOFTWARE_LOOPBACK )	ifa->ifa_flags |= IFF_LOOPBACK;
 			else if ( IsPointToPoint( addr ) )				ifa->ifa_flags |= IFF_POINTTOPOINT;
 			if( !( iaa->Flags & IP_ADAPTER_NO_MULTICAST ) )	ifa->ifa_flags |= IFF_MULTICAST;
-
-			
-			// <rdar://problem/4045657> Interface index being returned is 512
-			//
-			// Windows does not have a uniform scheme for IPv4 and IPv6 interface indexes.
-			// This code used to shift the IPv4 index up to ensure uniqueness between
-			// it and IPv6 indexes.  Although this worked, it was somewhat confusing to developers, who
-			// then see interface indexes passed back that don't correspond to anything
-			// that is seen in Win32 APIs or command line tools like "route".  As a relatively
-			// small percentage of developers are actively using IPv6, it seems to 
-			// make sense to make our use of IPv4 as confusion free as possible.
-			// So now, IPv6 interface indexes will be shifted up by a
-			// constant value which will serve to uniquely identify them, and we will
-			// leave IPv4 interface indexes unmodified.
 			
 			switch( family )
 			{
 				case AF_INET:  ifa->ifa_extra.index = iaa->IfIndex; break;
-				case AF_INET6: ifa->ifa_extra.index = ipv6IfIndex + kIPv6IfIndexBase;	 break;
+				case AF_INET6: ifa->ifa_extra.index = ipv6IfIndex;	 break;
 				default: break;
 			}
 
