@@ -47,7 +47,6 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 private:
-
 	afx_msg BOOL	OnSetActive();
 	afx_msg void	OnOK();
 
@@ -65,7 +64,6 @@ private:
 	HKEY			m_statusKey;
 	
 public:
-	
 	afx_msg void OnEnChangeHostname();
 	afx_msg void OnEnChangeUsername();
 	afx_msg void OnEnChangePassword();

@@ -504,7 +504,7 @@ static OSStatus SetServiceParameters()
 	//
 	// Add/Open Parameters section under service entry in registry
 	//
-	err = RegCreateKey( HKEY_CURRENT_USER, kServiceParametersNode, &key );
+	err = RegCreateKey( BONJOUR_HKEY, kServiceParametersNode, &key );
 	require_noerr( err, exit );
 	
 	//
@@ -549,7 +549,7 @@ static OSStatus GetServiceParameters()
 	//
 	// Add/Open Parameters section under service entry in registry
 	//
-	err = RegCreateKey( HKEY_CURRENT_USER, kServiceParametersNode, &key );
+	err = RegCreateKey( BONJOUR_HKEY, kServiceParametersNode, &key );
 	require_noerr( err, exit );
 	
 	valueLen = sizeof(DWORD);
@@ -656,7 +656,7 @@ static OSStatus CheckFirewall()
 	// the case, then we need to manipulate the firewall
 	// so networking works correctly.
 
-	err = RegCreateKey( HKEY_CURRENT_USER, kServiceParametersNode, &key );
+	err = RegCreateKey( BONJOUR_HKEY, kServiceParametersNode, &key );
 	require_noerr( err, exit );
 
 	valueLen = sizeof(DWORD);
@@ -1615,7 +1615,7 @@ mDNSlocal mStatus	SetupNotifications()
 	gDdnsChangedEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	err = translate_errno( gDdnsChangedEvent, (mStatus) GetLastError(), kUnknownErr );
 	require_noerr( err, exit );
-	err = RegCreateKey( HKEY_CURRENT_USER, kServiceParametersNode TEXT("\\DynDNS\\Setup"), &gDdnsKey );
+	err = RegCreateKey( BONJOUR_HKEY, kServiceParametersNode TEXT("\\DynDNS\\Setup"), &gDdnsKey );
 	require_noerr( err, exit );
 	err = RegNotifyChangeKeyValue( gDdnsKey, TRUE, REG_NOTIFY_CHANGE_NAME|REG_NOTIFY_CHANGE_LAST_SET, gDdnsChangedEvent, TRUE);
 	require_noerr( err, exit );
@@ -1628,7 +1628,7 @@ mDNSlocal mStatus	SetupNotifications()
 	err = translate_errno( gFileSharingChangedEvent, (mStatus) GetLastError(), kUnknownErr );
 	require_noerr( err, exit );
 
-	err = RegCreateKey( HKEY_CURRENT_USER, TEXT("SYSTEM\\CurrentControlSet\\Services\\lanmanserver\\Shares"), &gFileSharingKey );
+	err = RegCreateKey( HKEY_LOCAL_MACHINE, TEXT("SYSTEM\\CurrentControlSet\\Services\\lanmanserver\\Shares"), &gFileSharingKey );
 	
 	// Just to make sure that initialization doesn't fail on some old OS
 	// that doesn't have this key, we'll only add the notification if
@@ -1656,7 +1656,7 @@ mDNSlocal mStatus	SetupNotifications()
 	// that doesn't have this key, we'll only add the notification if
 	// the key exists.
 
-	err = RegCreateKey( HKEY_CURRENT_USER, TEXT("SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\FirewallRules"), &gFirewallKey );
+	err = RegCreateKey( HKEY_LOCAL_MACHINE, TEXT("SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\FirewallRules"), &gFirewallKey );
 	
 	if ( !err )
 	{
@@ -1675,7 +1675,7 @@ mDNSlocal mStatus	SetupNotifications()
 	gAdvertisedServicesChangedEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	err = translate_errno( gAdvertisedServicesChangedEvent, (mStatus) GetLastError(), kUnknownErr );
 	require_noerr( err, exit );
-	err = RegCreateKey( HKEY_CURRENT_USER, kServiceParametersNode TEXT("\\Services"), &gAdvertisedServicesKey );
+	err = RegCreateKey( BONJOUR_HKEY, kServiceParametersNode TEXT("\\Services"), &gAdvertisedServicesKey );
 	require_noerr( err, exit );
 	err = RegNotifyChangeKeyValue( gAdvertisedServicesKey, TRUE, REG_NOTIFY_CHANGE_NAME|REG_NOTIFY_CHANGE_LAST_SET, gAdvertisedServicesChangedEvent, TRUE);
 	require_noerr( err, exit );
@@ -2286,7 +2286,7 @@ SystemWakeForNetworkAccess( LARGE_INTEGER * timeout )
 
 	// Make sure the user enabled bonjour sleep proxy client 
 	
-	err = RegCreateKey( HKEY_CURRENT_USER, kServiceParametersNode L"\\Power Management", &key );
+	err = RegCreateKey( BONJOUR_HKEY, kServiceParametersNode L"\\Power Management", &key );
 	require_action( !err, exit, ok = FALSE );
 	dwSize = sizeof( DWORD );
 	err = RegQueryValueEx( key, L"Enabled", NULL, NULL, (LPBYTE) &enabled, &dwSize );

@@ -65,11 +65,11 @@
 
 #include <list>
 #include <process.h>
+#include <strsafe.h>
 
 #include "dns_sd.h"
 #include "WinServices.h"
 #include "DebugServices.h"
-
 
 typedef std::list<CString> StringList;
 

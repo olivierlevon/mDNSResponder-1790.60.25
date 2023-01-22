@@ -21,9 +21,8 @@
 #include "ConfigPropertySheet.h"
 #include "resource.h"
 
-#include <DebugServices.h>
 #include "loclibrary.h"
-#include <strsafe.h>
+
 
 
 #ifdef _DEBUG
@@ -58,6 +57,7 @@ HINSTANCE	GetLocalizedResources()
 //---------------------------------------------------------------------------------------------------------------------------
 //	Static Declarations
 //---------------------------------------------------------------------------------------------------------------------------
+
 DEFINE_GUID(CLSID_ControlPanel, 
 
 0x1207552c, 0xe59, 0x4d9f, 0x85, 0x54, 0xf1, 0xf8, 0x6, 0xcd, 0x7f, 0xa9);
@@ -228,8 +228,8 @@ exit:
 //-----------------------------------------------------------
 //	CCPApp::Unregister
 //-----------------------------------------------------------
-void
-CCPApp::Unregister( LPCTSTR clsidString )
+
+void CCPApp::Unregister( LPCTSTR clsidString )
 {
 	TCHAR keyName[ MAX_PATH * 2 ];
 

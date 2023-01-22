@@ -123,7 +123,7 @@ BOOL CBrowsingPage::OnSetActive()
 
 	// Now populate the browse domain box
 
-	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\DynDNS\\Setup\\" kServiceDynDNSBrowseDomains, 0,
+	err = RegCreateKeyEx( BONJOUR_HKEY, kServiceParametersNode L"\\DynDNS\\Setup\\" kServiceDynDNSBrowseDomains, 0,
 		                  NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &key, NULL );
 	require_noerr( err, exit );
 
@@ -207,7 +207,7 @@ void CBrowsingPage::Commit()
 	int			i;
 	DWORD		err;
 
-	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\DynDNS\\Setup\\" kServiceDynDNSBrowseDomains, 0,
+	err = RegCreateKeyEx( BONJOUR_HKEY, kServiceParametersNode L"\\DynDNS\\Setup\\" kServiceDynDNSBrowseDomains, 0,
 	                      NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &key, NULL );
 	require_noerr( err, exit );
 

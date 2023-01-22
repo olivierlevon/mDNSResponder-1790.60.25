@@ -21,10 +21,6 @@
 #include "ControlPanelExe.h"
 #include "ConfigPropertySheet.h"
 
-#include <WinServices.h>
-    
-#define MAX_KEY_LENGTH 255
-
 
 IMPLEMENT_DYNCREATE(CServicesPage, CPropertyPage)
 
@@ -90,8 +86,7 @@ void CServicesPage::SetModified( BOOL bChanged )
 //	CServicesPage::OnSetActive
 //---------------------------------------------------------------------------------------------------------------------------
 
-BOOL
-CServicesPage::OnSetActive()
+BOOL CServicesPage::OnSetActive()
 {
 	CConfigPropertySheet	*	psheet;
 	HKEY						key = NULL;
@@ -107,7 +102,7 @@ CServicesPage::OnSetActive()
 
 	// Now populate the browse domain box
 
-	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\Services\\SMB", 0,
+	err = RegCreateKeyEx( BONJOUR_HKEY, kServiceParametersNode L"\\Services\\SMB", 0,
 		                  NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &key, NULL );
 	require_noerr( err, exit );
 
@@ -124,7 +119,7 @@ CServicesPage::OnSetActive()
 
 	// Now populate the browse domain box
 
-	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\Power Management", 0,
+	err = RegCreateKeyEx( BONJOUR_HKEY, kServiceParametersNode L"\\Power Management", 0,
 		                  NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &key, NULL );
 	require_noerr( err, exit );
 
@@ -149,8 +144,7 @@ exit:
 //	CServicesPage::OnOK
 //---------------------------------------------------------------------------------------------------------------------------
 
-void
-CServicesPage::OnOK()
+void CServicesPage::OnOK()
 {
 	if ( m_modified )
 	{
@@ -159,19 +153,17 @@ CServicesPage::OnOK()
 }
 
 
-
 //---------------------------------------------------------------------------------------------------------------------------
 //	CServicesPage::Commit
 //---------------------------------------------------------------------------------------------------------------------------
 
-void
-CServicesPage::Commit()
+void CServicesPage::Commit()
 {
 	HKEY		key		= NULL;
 	DWORD		enabled;
 	DWORD		err;
 
-	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\Services\\SMB", 0,
+	err = RegCreateKeyEx( BONJOUR_HKEY, kServiceParametersNode L"\\Services\\SMB", 0,
 	                   	NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &key, NULL );
 	require_noerr( err, exit );
 
@@ -182,7 +174,7 @@ CServicesPage::Commit()
 	RegCloseKey( key );
 	key = NULL;
 
-	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\Power Management", 0,
+	err = RegCreateKeyEx( BONJOUR_HKEY, kServiceParametersNode L"\\Power Management", 0,
 		                  NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &key, NULL );
 	require_noerr( err, exit );
 
@@ -191,7 +183,6 @@ CServicesPage::Commit()
 	require_noerr( err, exit );
 	
 exit:
-
 	if ( key )
 	{
 		RegCloseKey( key );
@@ -245,8 +236,7 @@ void CPowerManagementWarning::DoDataExchange(CDataExchange* pDX)
 }
 
 
-BOOL
-CPowerManagementWarning::OnInitDialog()
+BOOL CPowerManagementWarning::OnInitDialog()
 {	
 	BOOL b = CDialog::OnInitDialog();
 
@@ -261,8 +251,7 @@ CPowerManagementWarning::OnInitDialog()
 }
 
 
-void
-CPowerManagementWarning::OnOK()
+void CPowerManagementWarning::OnOK()
 {
 	CDialog::OnOK();
 }

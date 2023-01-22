@@ -431,6 +431,7 @@
     <ClCompile Include="..\WinServices.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\RegNames.h" />
     <ClInclude Include="ConfigDialog.h" />
     <ClInclude Include="ConfigPropertySheet.h" />
     <ClInclude Include="ControlPanelExe.h" />

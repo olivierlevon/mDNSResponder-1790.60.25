@@ -47,15 +47,15 @@ CRegistrationPage::CRegistrationPage()
 
 	LSTATUS err;
 
-	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\DynDNS\\Setup\\Hostnames", 0,
+	err = RegCreateKeyEx( BONJOUR_HKEY, kServiceParametersNode L"\\DynDNS\\Setup\\Hostnames", 0,
 	                      NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &m_hostnameSetupKey, NULL );
 	check_noerr( err );
 
-	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\DynDNS\\Setup\\" kServiceDynDNSRegistrationDomains, 0,
+	err = RegCreateKeyEx( BONJOUR_HKEY, kServiceParametersNode L"\\DynDNS\\Setup\\" kServiceDynDNSRegistrationDomains, 0,
 	                      NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &m_registrationSetupKey, NULL );
 	check_noerr( err );
 
-	err = RegCreateKeyEx( HKEY_LOCAL_MACHINE, kServiceParametersNode L"\\DynDNS\\State\\Hostnames", 0,
+	err = RegCreateKeyEx( BONJOUR_HKEY, kServiceParametersNode L"\\DynDNS\\State\\Hostnames", 0,
 	                      NULL, REG_OPTION_NON_VOLATILE, KEY_READ|KEY_WRITE, NULL, &m_statusKey, NULL );
 	check_noerr( err );
 }

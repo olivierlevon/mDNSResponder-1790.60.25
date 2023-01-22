@@ -101,6 +101,9 @@
     <ClInclude Include="..\WinServices.h">
       <Filter>Support</Filter>
     </ClInclude>
+    <ClInclude Include="..\RegNames.h">
+      <Filter>Support</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\configurator.ico">
