@@ -100,9 +100,6 @@ struct	mDNS_PlatformSupport_struct
 	char						nbname[ 32 ];
 	char						nbdomain[ 32 ];
 	mDNSBool					smbFileSharing;
-	mDNSBool					smbPrintSharing;
-	ServiceRecordSet			smbSRS;
-	AuthRecord					smbSubTypes[ 2 ];
 	mDNSBool					registeredLoopback4;
 	int							interfaceCount;
 	mDNSInterfaceData *			interfaceList;
@@ -146,11 +143,9 @@ extern void		TCPIPConfigDidChange( mDNS * const inMDNS );
 extern void		DynDNSConfigDidChange( mDNS * const inMDNS );
 extern void		FileSharingDidChange( mDNS * const inMDNS );
 extern void		FirewallDidChange( mDNS * const inMDNS );
-extern mStatus  TCPAddSocket( mDNS * const inMDNS, TCPSocket *sock );
 extern mStatus	SetupInterfaceList( mDNS * const inMDNS );
 extern mStatus	TearDownInterfaceList( mDNS * const inMDNS );
 extern BOOL		IsWOMPEnabled();
-extern void     DispatchSocketEvents( mDNS * const inMDNS );
 
 
 #ifdef	__cplusplus

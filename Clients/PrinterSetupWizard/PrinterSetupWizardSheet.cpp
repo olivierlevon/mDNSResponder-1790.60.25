@@ -31,10 +31,8 @@
 #pragma warning(disable:4702)
 
 
-#if( !TARGET_OS_WINDOWS_CE )
-#	include	<mswsock.h>
-#	include	<process.h>
-#endif
+#include	<mswsock.h>
+#include	<process.h>
 
 
 #if defined( UNICODE ) || defined( _UNICODE )

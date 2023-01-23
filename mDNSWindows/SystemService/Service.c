@@ -40,17 +40,16 @@
 
 #include	"Firewall.h"
 
-#if( !TARGET_OS_WINDOWS_CE )
-	#include	<mswsock.h>
-	#include	<process.h>
-	#include	<ipExport.h>
-	#include	<ws2def.h>
-	#include	<ws2ipdef.h>
-	#include	<iphlpapi.h>
-	#include	<netioapi.h>
-	#include	<iptypes.h>
-	#include	<powrprof.h>
-#endif
+#include	<mswsock.h>
+#include	<process.h>
+#include	<ipExport.h>
+#include	<ws2def.h>
+#include	<ws2ipdef.h>
+#include	<iphlpapi.h>
+#include	<netioapi.h>
+#include	<iptypes.h>
+#include	<powrprof.h>
+
 
 #ifndef HeapEnableTerminationOnCorruption
 #	define HeapEnableTerminationOnCorruption (HEAP_INFORMATION_CLASS)1
@@ -67,10 +66,7 @@
 #define	DEBUG_NAME							"[mDNSWin32] "
 #define kServiceFirewallName				L"Bonjour"
 #define	kServiceDependencies				TEXT("Tcpip\0\0")
-#define	kDNSServiceCacheEntryCountDefault	512
 #define kRetryFirewallPeriod				30 * 1000
-#define kDefValueSize						MAX_PATH + 1
-#define kZeroIndex							0
 #define kSecondsTo100NSUnits				( 10 * 1000 * 1000 )
 #define kSPSMaintenanceWakePeriod			-30
 #define kWaitToRetry						(60 * 5)
@@ -180,16 +176,13 @@ DEBUG_LOCAL HANDLE						gAdvertisedServicesChangedEvent	= NULL; // Advertised se
 DEBUG_LOCAL SERVICE_STATUS				gServiceStatus;
 DEBUG_LOCAL SERVICE_STATUS_HANDLE		gServiceStatusHandle 	= NULL;
 DEBUG_LOCAL HANDLE						gServiceEventSource		= NULL;
-DEBUG_LOCAL bool						gServiceAllowRemote		= false;
 DEBUG_LOCAL HANDLE						gSPSWakeupEvent			= NULL;
 DEBUG_LOCAL HANDLE						gSPSSleepEvent			= NULL;
 DEBUG_LOCAL SocketRef					gUDSSocket				= 0;
 DEBUG_LOCAL udsEventCallback			gUDSCallback			= NULL;
 DEBUG_LOCAL BOOL						gRetryFirewall			= FALSE;
 
-typedef DWORD ( WINAPI * GetIpInterfaceEntryFunctionPtr )( PMIB_IPINTERFACE_ROW );
 mDNSlocal HMODULE								gIPHelperLibraryInstance		= NULL;
-mDNSlocal GetIpInterfaceEntryFunctionPtr		gGetIpInterfaceEntryFunctionPtr	= NULL;
 
 
 mDNSlocal HANDLE					gDNSThread = NULL;
@@ -318,8 +311,6 @@ static void	Usage( void )
 	fprintf( stderr, "    -start       Starts the service dispatcher after processing all other arguments\n" );
 	fprintf( stderr, "    -server      Runs the service directly as a server (for debugging)\n" );
 	fprintf( stderr, "    -q           Toggles Quiet Mode (no events or output)\n" );
-	fprintf( stderr, "    -remote      Allow remote connections\n" );
-	fprintf( stderr, "    -cache n     Number of mDNS cache entries (defaults to %d)\n", kDNSServiceCacheEntryCountDefault );
 	fprintf( stderr, "    -h[elp]      Display Help/Usage\n" );
 	fprintf( stderr, "\n" );
 }
@@ -1432,8 +1423,6 @@ static void	ServiceSpecificFinalize( int argc, LPTSTR argv[] )
 
 	if( gIPHelperLibraryInstance )
 	{
-		gGetIpInterfaceEntryFunctionPtr = NULL;
-		
 		FreeLibrary( gIPHelperLibraryInstance );
 		gIPHelperLibraryInstance = NULL;
 	}

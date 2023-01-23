@@ -105,7 +105,6 @@ mDNSlocal mStatus			TearDownInterface( mDNS * const inMDNS, mDNSInterfaceData *i
 mDNSlocal void CALLBACK		FreeInterface( mDNSInterfaceData *inIFD );
 mDNSlocal mStatus			SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, SocketRef *outSocketRef  );
 mDNSlocal mStatus			SockAddrToMDNSAddr( const struct sockaddr * const inSA, mDNSAddr *outIP, mDNSIPPort *outPort );
-mDNSlocal OSStatus			GetWindowsVersionString( char *inBuffer, size_t inBufferSize );
 mDNSlocal int				getifaddrs( struct ifaddrs **outAddrs );
 mDNSlocal void				freeifaddrs( struct ifaddrs *inAddrs );
 
@@ -200,8 +199,7 @@ extern mDNS		mDNSStorage;
 
 mDNSlocal mDNS_PlatformSupport	gMDNSPlatformSupport;
 mDNSs32							mDNSPlatformOneSecond	= 0;
-mDNSlocal UDPSocket		*		gUDPSockets				= NULL;
-mDNSlocal int					gUDPNumSockets			= 0;
+
 
 
 #if( MDNS_WINDOWS_USE_IPV6_IF_ADDRS )
@@ -264,10 +262,6 @@ mDNSlocal HANDLE					gSMBThreadQuitEvent			= NULL;
 mDNSexport mStatus	mDNSPlatformInit( mDNS * const inMDNS )
 {
 	mStatus		err;
-#ifndef WIN32_CENTENNIAL
-	OSVERSIONINFO osInfo;
-	BOOL ok;
-#endif
 	WSADATA		wsaData;
 	int			supported;
 	struct sockaddr_in	sa4;
@@ -466,7 +460,6 @@ mDNSexport void	mDNSPlatformClose( mDNS * const inMDNS )
 		}
 
 		inMDNS->p->smbFileSharing = mDNSfalse;
-		inMDNS->p->smbPrintSharing = mDNSfalse;
 	}
 
 	// Tear everything down in reverse order to how it was set up.
@@ -1282,11 +1275,6 @@ mDNSexport UDPSocket* mDNSPlatformUDPSocket( const mDNSIPPort requestedport )
 	err = mDNSPollRegisterSocket( sock->fd, FD_READ, UDPSocketNotification, sock );
 	require_noerr( err, exit ); 
 
-	// Bookkeeping
-
-	sock->next		= gUDPSockets;
-	gUDPSockets		= sock;
-	gUDPNumSockets++;
 
 exit:
 
@@ -1306,33 +1294,8 @@ exit:
 	
 mDNSexport void mDNSPlatformUDPClose( UDPSocket *sock )
 {
-	UDPSocket	*	current  = gUDPSockets;
-	UDPSocket	*	last = NULL;
-
-	while ( current )
-	{
-		if ( current == sock )
-		{
-			if ( last == NULL )
-			{
-				gUDPSockets = sock->next;
-			}
-			else
-			{
-				last->next = sock->next;
-			}
-
-			UDPCloseSocket( sock );
-			free( sock );
-
-			gUDPNumSockets--;
-
-			break;
-		}
-
-		last	= current;
-		current	= current->next;
-	}
+	UDPCloseSocket( sock );
+	free( sock );
 }
 
 //===========================================================================================================================
@@ -4149,110 +4112,6 @@ exit:
 	}
 
 	return ret;
-}
-
-//===========================================================================================================================
-//	GetWindowsVersionString
-//===========================================================================================================================
-
-mDNSlocal OSStatus	GetWindowsVersionString( char *inBuffer, size_t inBufferSize )
-{
-#if( !defined( VER_PLATFORM_WIN32_CE ) )
-	#define VER_PLATFORM_WIN32_CE		3
-#endif
-
-	OSStatus				err = 0;
-	const char *			versionString;
-#ifndef WIN32_CENTENNIAL
-	OSVERSIONINFO			osInfo;
-	BOOL					ok;
-	DWORD					platformID;
-	DWORD					majorVersion;
-	DWORD					minorVersion;
-	DWORD					buildNumber;
-	
-	versionString = "unknown Windows version";
-	
-	osInfo.dwOSVersionInfoSize = sizeof( OSVERSIONINFO );
-	ok = GetVersionEx( &osInfo );
-	err = translate_errno( ok, (OSStatus) GetLastError(), kUnknownErr );
-	require_noerr( err, exit );
-	
-	platformID		= osInfo.dwPlatformId;
-	majorVersion	= osInfo.dwMajorVersion;
-	minorVersion	= osInfo.dwMinorVersion;
-	buildNumber		= osInfo.dwBuildNumber & 0xFFFF;
-	
-	if( ( platformID == VER_PLATFORM_WIN32_WINDOWS ) && ( majorVersion == 4 ) )
-	{
-		if( ( minorVersion < 10 ) && ( buildNumber == 950 ) )
-		{
-			versionString	= "Windows 95";
-		}
-		else if( ( minorVersion < 10 ) && ( ( buildNumber > 950 ) && ( buildNumber <= 1080 ) ) )
-		{
-			versionString	= "Windows 95 SP1";
-		}
-		else if( ( minorVersion < 10 ) && ( buildNumber > 1080 ) )
-		{
-			versionString	= "Windows 95 OSR2";
-		}
-		else if( ( minorVersion == 10 ) && ( buildNumber == 1998 ) )
-		{
-			versionString	= "Windows 98";
-		}
-		else if( ( minorVersion == 10 ) && ( ( buildNumber > 1998 ) && ( buildNumber < 2183 ) ) )
-		{
-			versionString	= "Windows 98 SP1";
-		}
-		else if( ( minorVersion == 10 ) && ( buildNumber >= 2183 ) )
-		{
-			versionString	= "Windows 98 SE";
-		}
-		else if( minorVersion == 90 )
-		{
-			versionString	= "Windows ME";
-		}
-	}
-	else if( platformID == VER_PLATFORM_WIN32_NT )
-	{
-		if( ( majorVersion == 3 ) && ( minorVersion == 51 ) )
-		{
-			versionString	= "Windows NT 3.51";
-		}
-		else if( ( majorVersion == 4 ) && ( minorVersion == 0 ) )
-		{
-			versionString	= "Windows NT 4";
-		}
-		else if( ( majorVersion == 5 ) && ( minorVersion == 0 ) )
-		{
-			versionString	= "Windows 2000";
-		}
-		else if( ( majorVersion == 5 ) && ( minorVersion == 1 ) )
-		{
-			versionString	= "Windows XP";
-		}
-		else if( ( majorVersion == 5 ) && ( minorVersion == 2 ) )
-		{
-			versionString	= "Windows Server 2003";
-		}
-	}
-	else if( platformID == VER_PLATFORM_WIN32_CE )
-	{
-		versionString		= "Windows CE";
-	}
-	
-exit:
-#else
-	versionString = "Windows";
-#endif
-	if( inBuffer && ( inBufferSize > 0 ) )
-	{
-		inBufferSize -= 1;
-		strncpy( inBuffer, versionString, inBufferSize );
-		inBuffer[ inBufferSize ] = '\0';
-	}
-	return( err );
 }
 
 //===========================================================================================================================
