@@ -4642,7 +4642,9 @@ CheckFileShares( mDNS * const m )
 	if ( !err )
 	{
 		DWORD dwSize = sizeof( DWORD );
-		RegQueryValueEx( key, L"Advertise", NULL, NULL, (LPBYTE) &advertise, &dwSize );
+		DWORD			value;
+		RegQueryValueEx( key, L"Advertise", NULL, NULL, (LPBYTE) &value, &dwSize );
+		advertise = ( value > 0 ) ? mDNStrue : mDNSfalse;
 	}
 
 	if ( advertise && mDNSIsFileAndPrintSharingEnabled( &retry ) )
