@@ -78,6 +78,7 @@ static void syslog( int priority, const char * message, ...)
     len = _vscprintf( message, args ) + 1;
     buffer = mdns_malloc( len * sizeof(char) );
     if ( buffer ) { vsnprintf( buffer, len, message, args ); OutputDebugString( buffer ); mdns_free( buffer ); }
+    va_end( args );
     WSASetLastError( err );
 }
 #else
