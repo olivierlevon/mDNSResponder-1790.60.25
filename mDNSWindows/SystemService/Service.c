@@ -31,7 +31,7 @@
 #include	"Service.h"
 #include	"EventLog.h"
 
-#include	"Resource.h"
+#include	"resource.h"
 
 #include	"mDNSEmbeddedAPI.h"
 #include	"uDNS.h"
@@ -40,14 +40,14 @@
 
 #include	"Firewall.h"
 
-#include	<mswsock.h>
+#include	<MSWSock.h>
 #include	<process.h>
-#include	<ipExport.h>
+#include	<IPExport.h>
 #include	<ws2def.h>
 #include	<ws2ipdef.h>
 #include	<iphlpapi.h>
 #include	<netioapi.h>
-#include	<iptypes.h>
+#include	<IPTypes.h>
 #include	<powrprof.h>
 
 
@@ -73,6 +73,7 @@
 
 #define RR_CACHE_SIZE 500
 static CacheEntity gRRCache[RR_CACHE_SIZE];
+
 #if 0
 #pragma mark == Structures ==
 #endif
@@ -137,8 +138,6 @@ static mDNSu8			SystemWakeForNetworkAccess( LARGE_INTEGER * timeout );
 #endif
 
 
-#include	"mDNSEmbeddedAPI.h"
-
 #if 0
 #pragma mark == Globals ==
 #endif
@@ -199,6 +198,7 @@ bool gThreadStarted = false;
 //===========================================================================================================================
 //	Main
 //===========================================================================================================================
+
 int	Main( int argc, LPTSTR argv[] )
 {
 	OSStatus		err;
@@ -219,12 +219,16 @@ int	Main( int argc, LPTSTR argv[] )
 	
 	for( i = 1; i < argc; ++i )
 	{
-		if( StrCmp( argv[ i ], TEXT("-install") ) == 0 )			// Install
+		if (StrCmp(argv[i], TEXT("-q")) == 0)			// Quiet Mode (toggle)
+		{
+			gServiceQuietMode = !gServiceQuietMode;
+		}
+		else if ( StrCmp( argv[ i ], TEXT("-install") ) == 0 )			// Install
 		{
 			TCHAR desc[ 256 ];
 			
 			desc[ 0 ] = 0;
-			LoadString( GetModuleHandle( NULL ), IDS_SERVICE_DESCRIPTION, desc, sizeof( desc ) );
+			LoadString( GetModuleHandle( NULL ), IDS_SERVICE_DESCRIPTION, desc, sizeof( desc ) / sizeof( TCHAR ) );
 			err = InstallService( kServiceName, kServiceName, desc, argv[0] );
 			if( err )
 			{
@@ -232,7 +236,7 @@ int	Main( int argc, LPTSTR argv[] )
 				goto exit;
 			}
 		}
-		else if( StrCmp( argv[ i ], TEXT("-remove") ) == 0 )		// Remove
+		else if ( StrCmp( argv[ i ], TEXT("-remove") ) == 0 )		// Remove
 		{
 			err = RemoveService( kServiceName );
 			if( err )
@@ -241,28 +245,24 @@ int	Main( int argc, LPTSTR argv[] )
 				goto exit;
 			}
 		}
-		else if( StrCmp( argv[ i ], TEXT("-start") ) == 0 )		// Start
+		else if ( StrCmp( argv[ i ], TEXT("-start") ) == 0 )		// Start
 		{
 			start = TRUE;
 		}
-		else if( StrCmp( argv[ i ], TEXT("-server") ) == 0 )		// Server
+		else if ( StrCmp( argv[ i ], TEXT("-server") ) == 0 )		// Server
 		{
 			err = RunDirect( argc, argv );
-			if( err )
+			if ( err )
 			{
 				ReportStatus( EVENTLOG_ERROR_TYPE, "run service directly failed (%d)\n", err );
 			}
 			goto exit;
 		}
-		else if( StrCmp( argv[ i ], TEXT("-q") ) == 0 )			// Quiet Mode (toggle)
-		{
-			gServiceQuietMode = !gServiceQuietMode;
-		}
-		else if( ( StrCmp( argv[ i ], TEXT("-help") ) == 0 ) || 	// Help
-				 ( StrCmp( argv[ i ], TEXT("-h") ) == 0 ) )
+		else if ( ( StrCmp( argv[ i ], TEXT("-help") ) == 0 ) || 	// Help
+				  ( StrCmp( argv[ i ], TEXT("-h") ) == 0 ) )
 		{
 			Usage();
-			err = 0;
+			err = kNoErr;
 			break;
 		}
 		else
@@ -472,9 +472,6 @@ exit:
 
 static OSStatus SetServiceParameters()
 {
-	DWORD 			value;
-	DWORD			valueLen = sizeof(DWORD);
-	DWORD			type;
 	OSStatus		err;
 	HKEY			key;
 
@@ -506,9 +503,6 @@ exit:
 
 static OSStatus GetServiceParameters()
 {
-	DWORD 			value;
-	DWORD			valueLen;
-	DWORD			type;
 	OSStatus		err;
 	HKEY			key;
 
