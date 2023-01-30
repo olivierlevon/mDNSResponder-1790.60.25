@@ -1512,7 +1512,7 @@ mDNSexport void mDNSPlatformWriteDebugMsg(const char *msg)
 	}
 
 mDNSexport void mDNSPlatformWriteLogMsg( const char * ident, const char * msg, mDNSLogLevel_t level )
-	{
+{
 	int type;
 	
 	DEBUG_UNUSED( ident );
@@ -1528,9 +1528,11 @@ mDNSexport void mDNSPlatformWriteLogMsg( const char * ident, const char * msg, m
 		default:				type = EVENTLOG_INFORMATION_TYPE;	break;
 	}
 
-	gMDNSRecord.p->reportStatusFunc( type, msg );
+	if (gMDNSRecord.p->reportStatusFunc)
+		gMDNSRecord.p->reportStatusFunc( type, msg );
+
 	dlog( kDebugLevelInfo, "%s\n", msg );
-	}
+}
 
 mDNSexport void mDNSPlatformSourceAddrForDest( mDNSAddr * const src, const mDNSAddr * const dst )
 	{
