@@ -180,7 +180,6 @@ DEBUG_LOCAL HANDLE						gSPSWakeupEvent			= NULL;
 DEBUG_LOCAL HANDLE						gSPSSleepEvent			= NULL;
 DEBUG_LOCAL SocketRef					gUDSSocket				= 0;
 DEBUG_LOCAL udsEventCallback			gUDSCallback			= NULL;
-DEBUG_LOCAL BOOL						gRetryFirewall			= FALSE;
 
 mDNSlocal HMODULE								gIPHelperLibraryInstance		= NULL;
 
@@ -586,7 +585,7 @@ static OSStatus CheckFirewall()
 		dwBytes = bytesNeeded;
 
 		lpService = ( ENUM_SERVICE_STATUS* ) malloc( dwBytes );
-		require_action( lpService, exit, err = mStatus_NoMemoryErr );
+		require_action( lpService, exit, err = kNoMemoryErr );
 	}
 
 	err = translate_errno( ok, GetLastError(), kUnknownErr );
@@ -1198,11 +1197,6 @@ static OSStatus	ServiceRun( int argc, LPTSTR argv[] )
 	
 	err = CheckFirewall();
 	check_noerr( err );
-
-	if ( err )
-	{
-		gRetryFirewall = TRUE;
-	}
 	
 	// Run the service-specific stuff. This does not return until the service quits or is stopped.
 
