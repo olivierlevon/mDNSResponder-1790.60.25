@@ -103,7 +103,7 @@ mDNSlocal mStatus			SetupName( mDNS * const inMDNS );
 mDNSlocal mStatus			SetupInterface( mDNS * const inMDNS, const struct ifaddrs *inIFA, mDNSInterfaceData **outIFD );
 mDNSlocal mStatus			TearDownInterface( mDNS * const inMDNS, mDNSInterfaceData *inIFD );
 mDNSlocal void CALLBACK		FreeInterface( mDNSInterfaceData *inIFD );
-mDNSlocal mStatus			SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, SocketRef *outSocketRef  );
+mDNSlocal mStatus			SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, SOCKET *outSocketRef );
 mDNSlocal mStatus			SockAddrToMDNSAddr( const struct sockaddr * const inSA, mDNSAddr *outIP, mDNSIPPort *outPort );
 mDNSlocal int				getifaddrs( struct ifaddrs **outAddrs );
 mDNSlocal void				freeifaddrs( struct ifaddrs *inAddrs );
@@ -2824,10 +2824,10 @@ mDNSlocal void CALLBACK FreeInterface( mDNSInterfaceData *inIFD )
 //	SetupSocket
 //===========================================================================================================================
 
-mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, SocketRef *outSocketRef  )
+mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, SOCKET *outSocketRef  )
 {
 	mStatus			err;
-	SocketRef		sock;
+	SOCKET			sock;
 	DWORD			option;
 	DWORD			bytesReturned = 0;
 	BOOL			behavior = FALSE;
@@ -4052,7 +4052,7 @@ exit:
 mDNSlocal mDNSBool	CanReceiveUnicast( void )
 {
 	mDNSBool				ok;
-	SocketRef				sock;
+	SOCKET					sock;
 	struct sockaddr_in		addr;
 	
 	// Try to bind to the port without the SO_REUSEADDR option to test if someone else has already bound to it.

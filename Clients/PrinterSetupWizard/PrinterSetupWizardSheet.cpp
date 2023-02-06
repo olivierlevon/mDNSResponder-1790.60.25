@@ -900,7 +900,7 @@ CPrinterSetupWizardSheet::OnSocketEvent(WPARAM inWParam, LPARAM inLParam)
 
 			check(ref != NULL);
 
-			if ((SOCKET) DNSServiceRefSockFD(ref) == sock)
+			if (DNSServiceRefSockFD(ref) == sock)
 			{
 				DNSServiceProcessResult(ref);
 				break;
@@ -1694,7 +1694,7 @@ CPrinterSetupWizardSheet::StartOperation( DNSServiceRef ref )
 {
 	OSStatus err;
 
-	err = WSAAsyncSelect((SOCKET) DNSServiceRefSockFD(ref), m_hWnd, WM_SOCKET_EVENT, FD_READ|FD_CLOSE);
+	err = WSAAsyncSelect(DNSServiceRefSockFD(ref), m_hWnd, WM_SOCKET_EVENT, FD_READ|FD_CLOSE);
 	require_noerr( err, exit );
 
 	m_serviceRefList.push_back( ref );
@@ -1716,7 +1716,7 @@ CPrinterSetupWizardSheet::StopOperation( DNSServiceRef & ref )
 
 		if ( IsWindow( m_hWnd ) )
 		{
-			err = WSAAsyncSelect((SOCKET) DNSServiceRefSockFD( ref ), m_hWnd, 0, 0 );
+			err = WSAAsyncSelect(DNSServiceRefSockFD( ref ), m_hWnd, 0, 0 );
 			require_noerr( err, exit );
 		}
 

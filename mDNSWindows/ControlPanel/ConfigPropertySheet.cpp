@@ -113,7 +113,7 @@ LRESULT CConfigPropertySheet::OnDataReady(WPARAM inWParam, LPARAM inLParam)
 	{
 		SOCKET sock = (SOCKET) inWParam;
 
-		if ( m_browseDomainsRef && DNSServiceRefSockFD( m_browseDomainsRef ) == (int) sock )
+		if ( m_browseDomainsRef && DNSServiceRefSockFD( m_browseDomainsRef ) == sock )
 		{
 			DNSServiceProcessResult( m_browseDomainsRef );
 		}

@@ -2691,7 +2691,7 @@ DNSServiceErrorType DNSSD_API DNSServiceSetDispatchQueue
     dispatch_queue_t queue
 )
 {
-    int dnssd_fd  = DNSServiceRefSockFD(service);
+    dnssd_sock_t dnssd_fd  = DNSServiceRefSockFD(service);
     if (dnssd_fd == dnssd_InvalidSocket) return kDNSServiceErr_BadParam;
     if (!queue)
     {

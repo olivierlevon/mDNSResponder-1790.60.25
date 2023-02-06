@@ -99,7 +99,7 @@ int _tmain( int argc, _TCHAR *argv[] )
 		NULL );							// No callback context needed.
 	assert( err == kDNSServiceErr_NoError );
 	
-	err = WSAAsyncSelect( (SOCKET) DNSServiceRefSockFD( gServiceRef ), wind, BONJOUR_EVENT, FD_READ | FD_CLOSE );
+	err = WSAAsyncSelect( DNSServiceRefSockFD( gServiceRef ), wind, BONJOUR_EVENT, FD_READ | FD_CLOSE );
 	assert( err == kDNSServiceErr_NoError );
 	
 	fprintf( stderr, "Browsing for _http._tcp\n" );
@@ -117,7 +117,7 @@ int _tmain( int argc, _TCHAR *argv[] )
 	
 	if( gServiceRef )
 	{
-		WSAAsyncSelect( (SOCKET) DNSServiceRefSockFD( gServiceRef ), wind, BONJOUR_EVENT, 0 );
+		WSAAsyncSelect( DNSServiceRefSockFD( gServiceRef ), wind, BONJOUR_EVENT, 0 );
 		DNSServiceRefDeallocate( gServiceRef );
 	}
 	return( 0 );
@@ -148,7 +148,7 @@ static LRESULT CALLBACK WndProc( HWND inWindow, UINT inMsg, WPARAM inWParam, LPA
 			{
 				fprintf( stderr, "### ERROR! serious Bonjour error: %d\n", err );
 				
-				WSAAsyncSelect( (SOCKET) DNSServiceRefSockFD( gServiceRef ), inWindow, BONJOUR_EVENT, 0 );
+				WSAAsyncSelect( DNSServiceRefSockFD( gServiceRef ), inWindow, BONJOUR_EVENT, 0 );
 				DNSServiceRefDeallocate( gServiceRef );
 				gServiceRef = NULL;
 				

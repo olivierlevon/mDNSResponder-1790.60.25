@@ -5573,7 +5573,7 @@ mDNSlocal mStatus handle_client_request(request_state *req)
 // The lightweight operations are the ones that don't need a dedicated request_state structure allocated for them
 #define LightweightOp(X) (RecordOrientedOp(X) || (X) == cancel_request)
 
-mDNSlocal void request_callback(int fd, void *info)
+mDNSlocal void request_callback(dnssd_sock_t fd, void *info)
 {
     request_state *req = info;
     (void)fd; // Unused
@@ -5723,7 +5723,7 @@ mDNSlocal void request_callback(int fd, void *info)
     }
 }
 
-mDNSlocal void connect_callback(int fd, void *info)
+mDNSlocal void connect_callback(dnssd_sock_t fd, void *info)
 {
     dnssd_sockaddr_t cliaddr;
     dnssd_socklen_t len = (dnssd_socklen_t) sizeof(cliaddr);

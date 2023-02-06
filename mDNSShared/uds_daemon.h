@@ -233,7 +233,7 @@ extern void LogMcastStateInfo(mDNSBool mflag, mDNSBool start, mDNSBool mstatelog
 
 /* Routines that uds_daemon expects to link against: */
 
-typedef void (*udsEventCallback)(int fd, void *context);
+typedef void (*udsEventCallback)(dnssd_sock_t fd, void *context);
 extern mStatus udsSupportAddFDToEventLoop(dnssd_sock_t fd, udsEventCallback callback, void *context, void **platform_data);
 extern ssize_t udsSupportReadFD(dnssd_sock_t fd, char* buf, mDNSu32 len, int flags, void *platform_data);
 extern mStatus udsSupportRemoveFDFromEventLoop(dnssd_sock_t fd, void *platform_data); // Note: This also CLOSES the file descriptor as well
