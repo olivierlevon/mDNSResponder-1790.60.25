@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include <dns_sd.h>
+#include "dns_sd.h"
 #include <string>
 #include <list>
-#include <DebugServices.h>
+#include "DebugServices.h"
 
 class CPrinterSetupWizardSheet;
 

@@ -16,7 +16,7 @@
  */
 
 #include <windows.h>
-#include <DebugServices.h>
+#include "DebugServices.h"
 #include <stdlib.h>
 
 BOOL APIENTRY	DllMain( HANDLE inModule, DWORD inReason, LPVOID inReserved )

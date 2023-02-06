@@ -250,9 +250,9 @@ extern "C" {
 
     #endif
 
-    #include    <windows.h>
-    #include    <winsock2.h>
-    #include    <Ws2tcpip.h>
+    #include    <WinSock2.h>
+    #include    <WS2tcpip.h>
+    #include    <Windows.h>
 
     #if ( defined( _MSC_VER ) )
         #pragma warning( default:4706 )

@@ -18,9 +18,9 @@
 #pragma once
 #include "afxcmn.h"
 #include "UtilTypes.h"
-#include <CommonServices.h>
-#include <DebugServices.h>
-#include <dns_sd.h>
+#include "CommonServices.h"
+#include "DebugServices.h"
+#include "dns_sd.h"
 #include <map>
 #include "afxwin.h"
 

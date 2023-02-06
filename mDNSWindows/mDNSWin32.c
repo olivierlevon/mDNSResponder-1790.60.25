@@ -38,7 +38,7 @@
 #include	"Firewall.h"
 #include	"RegNames.h"
 #include	"Secret.h"
-#include	<dns_sd.h>
+#include	"dns_sd.h"
 
 #include	<Iphlpapi.h>
 #include	<mswsock.h>
@@ -177,7 +177,6 @@ mDNSlocal void				SetDomainSecrets( mDNS * const inMDNS );
 mDNSlocal void				SetDomainSecret( mDNS * const m, const domainname * inDomain );
 mDNSlocal VOID CALLBACK		CheckFileSharesProc( LPVOID arg, DWORD dwTimerLowValue, DWORD dwTimerHighValue );
 mDNSlocal void				CheckFileShares( mDNS * const inMDNS );
-mDNSlocal void				SMBCallback(mDNS *const m, ServiceRecordSet *const srs, mStatus result);
 mDNSlocal mDNSu8			IsWOMPEnabledForAdapter( const char * adapterName );
 mDNSlocal void				SendWakeupPacket( mDNS * const inMDNS, LPSOCKADDR addr, INT addrlen, const char * buf, INT buflen, INT numTries, INT msecSleep );
 mDNSlocal void _cdecl		SendMulticastWakeupPacket( void *arg );
