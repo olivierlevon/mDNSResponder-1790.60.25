@@ -1324,7 +1324,7 @@ mDNSlocal void regrecord_callback(mDNS *const m, AuthRecord *rr, mStatus result)
 mDNSlocal void set_peer_pid(request_state *request)
 {
     request->pid_name[0] = '\0';
-    request->process_id  = -1;
+    request->process_id  = (pid_t) -1;
 #ifdef LOCAL_PEEREPID
     pid_t           p    = (pid_t) -1;
     socklen_t       len  = sizeof(p);

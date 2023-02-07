@@ -18,44 +18,35 @@
 #pragma once
 
 #include "CommonServices.h"
-#include <winsock2.h>
+#include <WinSock2.h>
 #include <time.h>
 
 
 /* 
  * Posix process compatibility
  */
+
+#if !defined( pid_t )
 typedef int pid_t;
+#endif
 #if !defined( getpid )
 #	define getpid _getpid
 #endif
 
 
 /* 
- * Posix networking compatibility
- */
-extern unsigned
-if_nametoindex( const char * ifname );
-
-
-extern char*
-if_indextoname( unsigned ifindex, char * ifname );
-
-
-/* 
  * Posix time compatibility
  */
-extern int
-gettimeofday( struct timeval * tv, struct timezone * tz );
 
+extern int gettimeofday( struct timeval * tv, struct timezone * tz );
 
-extern struct tm*
-localtime_r( const time_t * clock, struct tm * result );
+extern struct tm* localtime_r( const time_t * clock, struct tm * result );
 
 
 /* 
  * Posix string compatibility
  */
+
 #if !defined( strcasecmp )
 #	define strcasecmp	_stricmp
 #endif

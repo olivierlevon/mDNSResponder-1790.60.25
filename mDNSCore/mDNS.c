@@ -2589,13 +2589,13 @@ mDNSlocal mDNSs32 ReverseMapDomainType(const domainname *const name)
     return(mDNSAddrType_None);
 }
 
-mDNSlocal void SendARP(mDNS *const m, const mDNSu8 op, const AuthRecord *const rr,
+mDNSlocal void mDNS_SendARP(mDNS *const m, const mDNSu8 op, const AuthRecord *const rr,
                        const mDNSv4Addr *const spa, const mDNSEthAddr *const tha, const mDNSv4Addr *const tpa, const mDNSEthAddr *const dst)
 {
     int i;
     mDNSu8 *ptr = m->omsg.data;
     NetworkInterfaceInfo *intf = FirstInterfaceForID(m, rr->resrec.InterfaceID);
-    if (!intf) { LogMsg("SendARP: No interface with InterfaceID %p found %s", rr->resrec.InterfaceID, ARDisplayString(m,rr)); return; }
+    if (!intf) { LogMsg("mDNS_SendARP: No interface with InterfaceID %p found %s", rr->resrec.InterfaceID, ARDisplayString(m,rr)); return; }
 
     // 0x00 Destination address
     for (i=0; i<6; i++) *ptr++ = dst->b[i];
@@ -2654,7 +2654,7 @@ mDNSlocal mDNSu16 IPv6CheckSum(const mDNSv6Addr *const src, const mDNSv6Addr *co
     return CheckSum(&ph, sizeof(ph), CheckSum(data, length, 0));
 }
 
-mDNSlocal void SendNDP(mDNS *const m, const mDNSu8 op, const mDNSu8 flags, const AuthRecord *const rr,
+mDNSlocal void mDNS_SendNDP(mDNS *const m, const mDNSu8 op, const mDNSu8 flags, const AuthRecord *const rr,
                        const mDNSv6Addr *const spa, const mDNSEthAddr *const tha, const mDNSv6Addr *const tpa, const mDNSEthAddr *const dst)
 {
     int i;
@@ -2666,7 +2666,7 @@ mDNSlocal void SendNDP(mDNS *const m, const mDNSu8 op, const mDNSu8 flags, const
     const mDNSv6Addr mc = { { 0xFF,0x02,0x00,0x00, 0,0,0,0, 0,0,0,1, 0xFF,tpa->b[0xD],tpa->b[0xE],tpa->b[0xF] } };
     const mDNSv6Addr *const v6dst = (op == NDP_Sol) ? &mc : tpa;
     NetworkInterfaceInfo *intf = FirstInterfaceForID(m, rr->resrec.InterfaceID);
-    if (!intf) { LogMsg("SendNDP: No interface with InterfaceID %p found %s", rr->resrec.InterfaceID, ARDisplayString(m,rr)); return; }
+    if (!intf) { LogMsg("mDNS_SendNDP: No interface with InterfaceID %p found %s", rr->resrec.InterfaceID, ARDisplayString(m,rr)); return; }
 
     // 0x00 Destination address
     for (i=0; i<6; i++) *ptr++ = dst->b[i];
@@ -2877,7 +2877,7 @@ mDNSlocal void SendResponses(mDNS *const m)
                             {
                                 LogSPS("NDP Announcement %2d Releasing traffic for H-MAC %.6a I-MAC %.6a %s",
                                        r2->AnnounceCount-3, &r2->WakeUp.HMAC, &r2->WakeUp.IMAC, ARDisplayString(m,r2));
-                                SendNDP(m, NDP_Adv, NDP_Override, r2, &r2->AddressProxy.ip.v6, &r2->WakeUp.IMAC, &AllHosts_v6, &AllHosts_v6_Eth);
+                                mDNS_SendNDP(m, NDP_Adv, NDP_Override, r2, &r2->AddressProxy.ip.v6, &r2->WakeUp.IMAC, &AllHosts_v6, &AllHosts_v6_Eth);
                             }
                             r2->LastAPTime = m->timenow;
                             // After 15 wakeups without success (maybe host has left the network) send three goodbyes instead
@@ -2898,13 +2898,13 @@ mDNSlocal void SendResponses(mDNS *const m)
                         {
                             LogSPS("ARP Announcement %2d Capturing traffic for H-MAC %.6a I-MAC %.6a %s",
                                     rr->AnnounceCount, &rr->WakeUp.HMAC, &rr->WakeUp.IMAC, ARDisplayString(m,rr));
-                            SendARP(m, 1, rr, &rr->AddressProxy.ip.v4, &zeroEthAddr, &rr->AddressProxy.ip.v4, &onesEthAddr);
+                            mDNS_SendARP(m, 1, rr, &rr->AddressProxy.ip.v4, &zeroEthAddr, &rr->AddressProxy.ip.v4, &onesEthAddr);
                         }
                         else if (rr->AddressProxy.type == mDNSAddrType_IPv6)
                         {
                             LogSPS("NDP Announcement %2d Capturing traffic for H-MAC %.6a I-MAC %.6a %s",
                                     rr->AnnounceCount, &rr->WakeUp.HMAC, &rr->WakeUp.IMAC, ARDisplayString(m,rr));
-                            SendNDP(m, NDP_Adv, NDP_Override, rr, &rr->AddressProxy.ip.v6, mDNSNULL, &AllHosts_v6, &AllHosts_v6_Eth);
+                            mDNS_SendNDP(m, NDP_Adv, NDP_Override, rr, &rr->AddressProxy.ip.v6, mDNSNULL, &AllHosts_v6, &AllHosts_v6_Eth);
                         }
                     }
                 }
@@ -3959,7 +3959,7 @@ mDNSlocal void SendQueries(mDNS *const m)
                     // (using our sender IP address) instead of an ARP *probe* (using all-zero sender IP address).
                     // A similar concern may apply to the NDP Probe too. -- SC
                     LogSPS("SendQueries ARP Probe %d %s %s", ar->ProbeCount, InterfaceNameForID(m, ar->resrec.InterfaceID), ARDisplayString(m,ar));
-                    SendARP(m, 1, ar, &zerov4Addr, &zeroEthAddr, &ar->AddressProxy.ip.v4, &ar->WakeUp.IMAC);
+                    mDNS_SendARP(m, 1, ar, &zerov4Addr, &zeroEthAddr, &ar->AddressProxy.ip.v4, &ar->WakeUp.IMAC);
                 }
                 else if (ar->AddressProxy.type == mDNSAddrType_IPv6)
                 {
@@ -3968,7 +3968,7 @@ mDNSlocal void SendQueries(mDNS *const m)
                     // No target hardware address
                     // IPv6 target address is address we're probing
                     // Ethernet destination address is Ethernet interface address of the Sleep Proxy client we're probing
-                    SendNDP(m, NDP_Sol, 0, ar, &zerov6Addr, mDNSNULL, &ar->AddressProxy.ip.v6, &ar->WakeUp.IMAC);
+                    mDNS_SendNDP(m, NDP_Sol, 0, ar, &zerov6Addr, mDNSNULL, &ar->AddressProxy.ip.v6, &ar->WakeUp.IMAC);
                 }
                 // Mark for sending. (If no active interfaces, then don't even try.)
                 ar->SendRNow   = (!intf || ar->WakeUp.HMAC.l[0]) ? mDNSNULL : ar->resrec.InterfaceID ? ar->resrec.InterfaceID : intf->InterfaceID;
@@ -4334,7 +4334,7 @@ mDNSlocal void SendWakeup(mDNS *const m, mDNSInterfaceID InterfaceID, mDNSEthAdd
     NetworkInterfaceInfo *intf = FirstInterfaceForID(m, InterfaceID);
     if (!intf)
     {
-        LogRedact(MDNS_LOG_CATEGORY_DEFAULT, MDNS_LOG_DEFAULT, "SendARP: No interface with InterfaceID %p found", InterfaceID);
+        LogRedact(MDNS_LOG_CATEGORY_DEFAULT, MDNS_LOG_DEFAULT, ": No interface with InterfaceID %p found", InterfaceID);
         return;
     }
 
@@ -8128,7 +8128,7 @@ mDNSlocal void ClearProxyRecords(mDNS *const m, const OwnerOptData *const owner,
                     #if defined(MDNS_USE_Unsolicited_Neighbor_Advertisements) && MDNS_USE_Unsolicited_Neighbor_Advertisements
                     LogSPS("NDP Announcement -- Releasing traffic for H-MAC %.6a I-MAC %.6a %s",
                            &rr->WakeUp.HMAC, &rr->WakeUp.IMAC, ARDisplayString(m,rr));
-                    SendNDP(m, NDP_Adv, NDP_Override, rr, &rr->AddressProxy.ip.v6, &rr->WakeUp.IMAC, &AllHosts_v6, &AllHosts_v6_Eth);
+                    mDNS_SendNDP(m, NDP_Adv, NDP_Override, rr, &rr->AddressProxy.ip.v6, &rr->WakeUp.IMAC, &AllHosts_v6, &AllHosts_v6_Eth);
                     #endif
                 }
                 LogSPS("ClearProxyRecords: Removing %3d AC %2d %02X H-MAC %.6a I-MAC %.6a %d %d %s",
@@ -16200,7 +16200,7 @@ mDNSlocal void mDNSCoreReceiveRawARP(mDNS *const m, const ARP_EthIP *const arp, 
                 {
                     const mDNSv4Addr tpa = arp->tpa;
                     const mDNSv4Addr spa = arp->spa;
-                    SendARP(m, 2, rr, &tpa, &arp->sha, &spa, &arp->sha);
+                    mDNS_SendARP(m, 2, rr, &tpa, &arp->sha, &spa, &arp->sha);
                 }
             }
     }
@@ -16304,9 +16304,9 @@ mDNSlocal void mDNSCoreReceiveRawND(mDNS *const m, const mDNSEthAddr *const sha,
                 else if (msg == msg3)
                     mDNSPlatformSetLocalAddressCacheEntry(&rr->AddressProxy, &rr->WakeUp.IMAC, InterfaceID);
                 else if (msg == msg4)
-                    SendNDP(m, NDP_Adv, NDP_Solicited, rr, &ndp->target, mDNSNULL, spa, sha);
+                    mDNS_SendNDP(m, NDP_Adv, NDP_Solicited, rr, &ndp->target, mDNSNULL, spa, sha);
                 else if (msg == msg5)
-                    SendNDP(m, NDP_Adv, 0, rr, &ndp->target, mDNSNULL, &AllHosts_v6, &AllHosts_v6_Eth);
+                    mDNS_SendNDP(m, NDP_Adv, 0, rr, &ndp->target, mDNSNULL, &AllHosts_v6, &AllHosts_v6_Eth);
             }
     }
 

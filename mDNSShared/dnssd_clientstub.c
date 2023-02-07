@@ -43,11 +43,11 @@
 #if defined(_WIN32)
 
     #define _SSIZE_T
-    #include <CommonServices.h>
-    #include <DebugServices.h>
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-    #include <windows.h>
+    #include "CommonServices.h"
+    #include "DebugServices.h"
+    #include <WinSock2.h>
+    #include <WS2tcpip.h>
+    #include <Windows.h>
     #include <stdarg.h>
     #include <stdio.h>
 
