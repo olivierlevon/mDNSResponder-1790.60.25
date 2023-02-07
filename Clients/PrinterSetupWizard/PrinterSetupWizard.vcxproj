@@ -391,7 +391,6 @@
     <None Include="res\Info.ico" />
     <None Include="res\NetworkPrinter.ico" />
     <None Include="res\watermark.bmp" />
-    <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuildStep Include="res\PrinterSetupWizard.manifest">
