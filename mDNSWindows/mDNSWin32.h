@@ -18,9 +18,8 @@
 #ifndef	__MDNS_WIN32__
 #define	__MDNS_WIN32__
 
-#include	"CommonServices.h"
 
-#include	<mswsock.h>
+#include	<MSWSock.h>
 
 #include	"mDNSEmbeddedAPI.h"
 #include	"uDNS.h"
@@ -145,7 +144,7 @@ extern void		FileSharingDidChange( mDNS * const inMDNS );
 extern void		FirewallDidChange( mDNS * const inMDNS );
 extern mStatus	SetupInterfaceList( mDNS * const inMDNS );
 extern mStatus	TearDownInterfaceList( mDNS * const inMDNS );
-extern BOOL		IsWOMPEnabled();
+extern BOOL		IsWOMPEnabled( mDNS * const inMDNS );
 
 
 #ifdef	__cplusplus

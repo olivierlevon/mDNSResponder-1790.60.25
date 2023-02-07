@@ -354,7 +354,7 @@ PollRegisterSource( PollSource *source )
 			// memory leaks when using static run-time libraries.
 			// See <http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dllproc/base/createthread.asp>.
 
-			worker->thread = ( HANDLE ) _beginthreadex_compat( NULL, 0, WorkerMain, worker, 0, &worker->id );
+			worker->thread = ( HANDLE ) _beginthreadex( NULL, 0, WorkerMain, worker, 0, &worker->id );
 			err = translate_errno( worker->thread, ( mStatus ) GetLastError(), kUnknownErr );
 			require_noerr( err, exit );
 

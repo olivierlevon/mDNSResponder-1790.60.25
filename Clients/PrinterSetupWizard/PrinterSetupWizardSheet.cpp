@@ -161,7 +161,7 @@ CPrinterSetupWizardSheet::LoadPrinterNames()
 	DWORD dwNeeded = 0, dwNumPrinters = 0;
 
 	BOOL ok = EnumPrinters(PRINTER_ENUM_LOCAL, NULL, 4, NULL, 0, &dwNeeded, &dwNumPrinters);
-	err = translate_errno( ok, errno_compat(), kUnknownErr );
+	err = translate_errno( ok, GetLastError(), kUnknownErr );
 
 	if ((err == ERROR_INSUFFICIENT_BUFFER) && (dwNeeded > 0))
 	{
@@ -176,7 +176,7 @@ CPrinterSetupWizardSheet::LoadPrinterNames()
 	
 		require_action( buffer, exit, kNoMemoryErr );
 		ok = EnumPrinters(PRINTER_ENUM_LOCAL, NULL, 4, buffer, dwNeeded, &dwNeeded, &dwNumPrinters);
-		err = translate_errno( ok, errno_compat(), kUnknownErr );
+		err = translate_errno( ok, GetLastError(), kUnknownErr );
 		require_noerr( err, exit );
 
 		for (DWORD index = 0; index < dwNumPrinters; index++)
@@ -248,9 +248,9 @@ CPrinterSetupWizardSheet::InstallPrinter(Printer * printer)
 			//
 			// create the thread
 			//
-			hThread = (HANDLE) _beginthreadex_compat( NULL, 0, InstallDriverThread, printer, 0, &threadID );
+			hThread = (HANDLE) _beginthreadex( NULL, 0, InstallDriverThread, printer, 0, &threadID );
 			err = translate_errno( hThread, (OSStatus) GetLastError(), kUnknownErr );
-			require_noerr_with_log( log, "_beginthreadex_compat()", err, exit );
+			require_noerr_with_log( log, "_beginthreadex()", err, exit );
 				
 			//
 			// go modal
@@ -268,7 +268,7 @@ CPrinterSetupWizardSheet::InstallPrinter(Printer * printer)
 			// Wait until child process exits.
 			//
 			dwResult = WaitForSingleObject( hThread, INFINITE );
-			err = translate_errno( dwResult == WAIT_OBJECT_0, errno_compat(), err = kUnknownErr );
+			err = translate_errno( dwResult == WAIT_OBJECT_0, GetLastError(), err = kUnknownErr );
 			require_noerr_with_log( log, "WaitForSingleObject()", err, exit );
 
 			//
@@ -318,7 +318,7 @@ CPrinterSetupWizardSheet::InstallPrinter(Printer * printer)
 	if (printer->deflt)
 	{
 		ok = SetDefaultPrinter( printer->actualName );
-		err = translate_errno( ok, errno_compat(), err = kUnknownErr );
+		err = translate_errno( ok, GetLastError(), err = kUnknownErr );
 		require_noerr_with_log( log, "SetDefaultPrinter()", err, exit );
 	}
 
@@ -351,7 +351,7 @@ CPrinterSetupWizardSheet::InstallPrinterPort( Printer * printer, Service * servi
 	check( q );
 
 	ok = OpenPrinter(L",XcvMonitor Standard TCP/IP Port", &hXcv, &printerDefaults);
-	err = translate_errno( ok, errno_compat(), kUnknownErr );
+	err = translate_errno( ok, GetLastError(), kUnknownErr );
 	require_noerr_with_log( log, "OpenPrinter()", err, exit );
 
 	//
@@ -383,7 +383,7 @@ CPrinterSetupWizardSheet::InstallPrinterPort( Printer * printer, Service * servi
 	wcscpy_s( portData.sztHostAddress, service->hostname );
 
 	ok = XcvData(hXcv, L"AddPort", (PBYTE) &portData, sizeof(PORT_DATA_1), pOutputData, cbInputData,  &cbOutputNeeded, &dwStatus);
-	err = translate_errno( ok, errno_compat(), kUnknownErr );
+	err = translate_errno( ok, GetLastError(), kUnknownErr );
 	require_noerr_with_log( log, "XcvData()", err, exit );
 
 exit:
@@ -442,7 +442,7 @@ CPrinterSetupWizardSheet::InstallPrinterPDLAndLPR(Printer * printer, Service * s
 	pInfo.UntilTime				=	0;
 
 	hPrinter = AddPrinter(NULL, 2, (LPBYTE) &pInfo);
-	err = translate_errno( hPrinter, errno_compat(), kUnknownErr );
+	err = translate_errno( hPrinter, GetLastError(), kUnknownErr );
 	require_noerr_with_log( log, "AddPrinter()", err, exit );
 
 exit:
@@ -482,7 +482,7 @@ CPrinterSetupWizardSheet::InstallPrinterIPP(Printer * printer, Service * service
 	pInfo.Attributes		= PRINTER_ATTRIBUTE_NETWORK | PRINTER_ATTRIBUTE_LOCAL;
 	
 	hPrinter = AddPrinter(NULL, 2, (LPBYTE)&pInfo);
-	err = translate_errno( hPrinter, errno_compat(), kUnknownErr );
+	err = translate_errno( hPrinter, GetLastError(), kUnknownErr );
 	require_noerr_with_log( log, "AddPrinter()", err, exit );
 
 exit:
@@ -953,15 +953,15 @@ CPrinterSetupWizardSheet::InstallDriverThread( LPVOID inParam )
 		command.Format(L"rundll32.exe printui.dll,PrintUIEntry /ia /m \"%s\" /f \"%s\"", (LPCTSTR) printer->modelName, (LPCTSTR) printer->infFileName );
 
 		ok = CreateProcess(NULL, command.GetBuffer(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
-		err = translate_errno( ok, errno_compat(), kUnknownErr );
+		err = translate_errno( ok, GetLastError(), kUnknownErr );
 		require_noerr( err, exit );
 
 		dwResult = WaitForSingleObject( pi.hProcess, INFINITE );
-		translate_errno( dwResult == WAIT_OBJECT_0, errno_compat(), err = kUnknownErr );
+		translate_errno( dwResult == WAIT_OBJECT_0, GetLastError(), err = kUnknownErr );
 		require_noerr( err, exit );
 
 		ok = GetExitCodeProcess( pi.hProcess, &exitCode );
-		err = translate_errno( ok, errno_compat(), kUnknownErr );
+		err = translate_errno( ok, GetLastError(), kUnknownErr );
 		require_noerr( err, exit );
 	}
 
@@ -985,7 +985,7 @@ exit:
 	//
 	m_self->PostMessage( WM_PROCESS_EVENT, err, exitCode );
 
-	_endthreadex_compat( 0 );
+	_endthreadex( 0 );
 
 	return 0;
 }

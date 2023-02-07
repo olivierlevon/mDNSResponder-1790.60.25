@@ -20,7 +20,7 @@
 #include "PrinterSetupWizardSheet.h"
 #include "ThirdPage.h"
 #include "tcpxcv.h"
-#include <dns_sd.h>
+#include "dns_sd.h"
 #include <winspool.h>
 #include <setupapi.h>
 
@@ -85,7 +85,7 @@ CThirdPage::CThirdPage()
 	// load printers from ntprint.inf
 	//
 	ok = GetWindowsDirectory( windowsDirectory, bufferSize );
-	err = translate_errno( ok, errno_compat(), kUnknownErr );
+	err = translate_errno( ok, GetLastError(), kUnknownErr );
 	require_noerr( err, exit );
  
 	//
@@ -588,7 +588,7 @@ CThirdPage::LoadPrintDriverDefs( Manufacturers & manufacturers )
 		// this call gets the real info
 		//
 		ok = EnumPrinterDrivers(NULL, L"all", 6, buffer, bytesReceived, &bytesReceived, &numPrinters);
-		err = translate_errno( ok, errno_compat(), kUnknownErr );
+		err = translate_errno( ok, GetLastError(), kUnknownErr );
 		require_noerr( err, exit );
 	
 		DRIVER_INFO_6 * info = (DRIVER_INFO_6*) buffer;

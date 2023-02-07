@@ -1360,10 +1360,10 @@ mDNSexport mStatus
 		goto exit;
 	}
 	
-	if (IsValidSocket(sendingsocket))
+	if (sendingsocket != INVALID_SOCKET)
 	{
 		n = sendto( sendingsocket, (char *) inMsg, n, 0, (struct sockaddr *) &addr, sizeof( addr ) );
-		err = translate_errno( n > 0, errno_compat(), kWriteErr );
+		err = translate_errno( n > 0, WSAGetLastError(), kWriteErr );
 
 		if ( err )
 		{
@@ -2155,7 +2155,7 @@ mStatus	SetupNiceName( mDNS * const inMDNS )
 	// First try and open the registry key that contains the computer description value
 	s = TEXT("SYSTEM\\CurrentControlSet\\Services\\lanmanserver\\parameters");
 	err = RegOpenKeyEx( HKEY_LOCAL_MACHINE, s, 0, KEY_READ, &descKey);
-	check_translated_errno( err == 0, errno_compat(), kNameErr );
+	check_translated_errno( err == 0, GetLastError(), kNameErr );
 
 	if ( !err )
 	{
@@ -2653,7 +2653,7 @@ mDNSlocal mStatus	SetupInterface( mDNS * const inMDNS, const struct ifaddrs *inI
 	
 	ifd = (mDNSInterfaceData *) calloc( 1, sizeof( *ifd ) );
 	require_action( ifd, exit, err = mStatus_NoMemoryErr );
-	ifd->sock.fd	= kInvalidSocketRef;
+	ifd->sock.fd	= INVALID_SOCKET;
 	ifd->sock.ifd	= ifd;
 	ifd->sock.next	= NULL;
 	ifd->sock.m		= inMDNS;
@@ -2741,7 +2741,7 @@ mDNSlocal mStatus	SetupInterface( mDNS * const inMDNS, const struct ifaddrs *inI
 	
 	ifd->interfaceInfo.Advertise = ( mDNSu8 ) inMDNS->AdvertiseLocalAddresses;
 
-	if ( ifd->sock.fd != kInvalidSocketRef )
+	if ( ifd->sock.fd != INVALID_SOCKET )
 	{
 		err = mDNSPollRegisterSocket( ifd->sock.fd, FD_READ, UDPSocketNotification, &ifd->sock );
 		require_noerr( err, exit );
@@ -2837,7 +2837,7 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 	// Set up an IPv4 or IPv6 UDP socket.
 	
 	sock = socket( inAddr->sa_family, SOCK_DGRAM, IPPROTO_UDP );
-	err = translate_errno( IsValidSocket( sock ), errno_compat(), kUnknownErr );
+	err = translate_errno( sock != INVALID_SOCKET, WSAGetLastError(), kUnknownErr );
 	require_noerr( err, exit );
 		
 	// Turn on reuse address option so multiple servers can listen for Multicast DNS packets,
@@ -2847,7 +2847,7 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 	{
 		option = 1;
 		err = setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (char *) &option, sizeof( option ) );
-		check_translated_errno( err == 0, errno_compat(), kOptionErr );
+		check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 	}
 
 	// <rdar://problem/7894393> Bonjour for Windows broken on Windows XP
@@ -2869,7 +2869,7 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 	// multicast packets function correctly under all circumstances.
 
 	err = WSAIoctl( sock, SIO_UDP_CONNRESET, &behavior, sizeof(behavior), NULL, 0, &bytesReturned, NULL, NULL );
-	check_translated_errno( err == 0, errno_compat(), kOptionErr );
+	check_translated_errno( err == 0, GetLastError(), kOptionErr );
 
 	if( inAddr->sa_family == AF_INET )
 	{
@@ -2886,13 +2886,13 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 		sa4.sin_addr.s_addr	= ipv4.NotAnInteger;
 		
 		err = bind( sock, (struct sockaddr *) &sa4, sizeof( sa4 ) );
-		check_translated_errno( err == 0, errno_compat(), kUnknownErr );
+		check_translated_errno( err == 0, WSAGetLastError(), kUnknownErr );
 		
 		// Turn on option to receive destination addresses and receiving interface.
 		
 		option = 1;
 		err = setsockopt( sock, IPPROTO_IP, IP_PKTINFO, (char *) &option, sizeof( option ) );
-		check_translated_errno( err == 0, errno_compat(), kOptionErr );
+		check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 		
 		if ( !mDNSIPPortIsZero( port ) )
 		{
@@ -2901,32 +2901,32 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 			mreqv4.imr_multiaddr.s_addr = AllDNSLinkGroup_v4.ip.v4.NotAnInteger;
 			mreqv4.imr_interface.s_addr = ipv4.NotAnInteger;
 			err = setsockopt( sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mreqv4, sizeof( mreqv4 ) );
-			check_translated_errno( err == 0, errno_compat(), kOptionErr );
+			check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 		
 			// Specify the interface to send multicast packets on this socket.
 		
 			sa4.sin_addr.s_addr = ipv4.NotAnInteger;
 			err = setsockopt( sock, IPPROTO_IP, IP_MULTICAST_IF, (char *) &sa4.sin_addr, sizeof( sa4.sin_addr ) );
-			check_translated_errno( err == 0, errno_compat(), kOptionErr );
+			check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 		
 			// Enable multicast loopback so we receive multicast packets we send (for same-machine operations).
 		
 			option = 1;
 			err = setsockopt( sock, IPPROTO_IP, IP_MULTICAST_LOOP, (char *) &option, sizeof( option ) );
-			check_translated_errno( err == 0, errno_compat(), kOptionErr );
+			check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 		}
 
 		// Send unicast packets with TTL 255 (helps against spoofing).
 		
 		option = 255;
 		err = setsockopt( sock, IPPROTO_IP, IP_TTL, (char *) &option, sizeof( option ) );
-		check_translated_errno( err == 0, errno_compat(), kOptionErr );
+		check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 
 		// Send multicast packets with TTL 255 (helps against spoofing).
 		
 		option = 255;
 		err = setsockopt( sock, IPPROTO_IP, IP_MULTICAST_TTL, (char *) &option, sizeof( option ) );
-		check_translated_errno( err == 0, errno_compat(), kOptionErr );
+		check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 
 	}
 	else if( inAddr->sa_family == AF_INET6 )
@@ -2952,17 +2952,17 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 		#if( defined( IPV6_V6ONLY ) )
 			option = 1;
 			err = setsockopt( sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *) &option, sizeof( option ) );
-			check_translated_errno( err == 0, errno_compat(), kOptionErr );		
+			check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 		#endif		
 
 		err = bind( sock, (struct sockaddr *) &sa6, sizeof( sa6 ) );
-		check_translated_errno( err == 0, errno_compat(), kUnknownErr );
+		check_translated_errno( err == 0, WSAGetLastError(), kUnknownErr );
 		
 		// Turn on option to receive destination addresses and receiving interface.
 		
 		option = 1;
 		err = setsockopt( sock, IPPROTO_IPV6, IPV6_PKTINFO, (char *) &option, sizeof( option ) );
-		check_translated_errno( err == 0, errno_compat(), kOptionErr );
+		check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 		
 		if ( !mDNSIPPortIsZero( port ) )
 		{
@@ -2971,32 +2971,32 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 			mreqv6.ipv6mr_multiaddr = *( (struct in6_addr *) &AllDNSLinkGroup_v6.ip.v6 );
 			mreqv6.ipv6mr_interface = sa6p->sin6_scope_id;
 			err = setsockopt( sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *) &mreqv6, sizeof( mreqv6 ) );
-			check_translated_errno( err == 0, errno_compat(), kOptionErr );
+			check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 		
 			// Specify the interface to send multicast packets on this socket.
 		
 			option = (DWORD) sa6p->sin6_scope_id;
 			err = setsockopt( sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, (char *) &option, sizeof( option ) );
-			check_translated_errno( err == 0, errno_compat(), kOptionErr );
+			check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 		
 			// Enable multicast loopback so we receive multicast packets we send (for same-machine operations).
 			
 			option = 1;
 			err = setsockopt( sock, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, (char *) &option, sizeof( option ) );
-			check_translated_errno( err == 0, errno_compat(), kOptionErr );
+			check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 		}
 
 		// Send unicast packets with TTL 255 (helps against spoofing).
 		
 		option = 255;
 		err = setsockopt( sock, IPPROTO_IPV6, IPV6_UNICAST_HOPS, (char *) &option, sizeof( option ) );
-		check_translated_errno( err == 0, errno_compat(), kOptionErr );
+		check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 
 		// Send multicast packets with TTL 255 (helps against spoofing).
 			
 		option = 255;
 		err = setsockopt( sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, (char *) &option, sizeof( option ) );
-		check_translated_errno( err == 0, errno_compat(), kOptionErr );
+		check_translated_errno( err == 0, WSAGetLastError(), kOptionErr );
 	}
 	else
 	{
@@ -3008,13 +3008,13 @@ mDNSlocal mStatus	SetupSocket( const struct sockaddr *inAddr, mDNSIPPort port, S
 	// Success!
 	
 	*outSocketRef = sock;
-	sock = kInvalidSocketRef;
+	sock = INVALID_SOCKET;
 	err = mStatus_NoError;
 	
 exit:
-	if( IsValidSocket( sock ) )
+	if( sock != INVALID_SOCKET )
 	{
-		close_compat( sock );
+		closesocket( sock );
 	}
 	return( err );
 }
@@ -3755,7 +3755,7 @@ mDNSlocal int	getifaddrs_ipv4( struct ifaddrs **outAddrs )
 	// call WSAIoctl repeatedly with increasing buffer sizes until it succeeds. Limit this to 100 tries for safety.
 	
 	sock = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
-	err = translate_errno( IsValidSocket( sock ), errno_compat(), kUnknownErr );
+	err = translate_errno( sock != INVALID_SOCKET, WSAGetLastError(), kUnknownErr );
 	require_noerr( err, exit );
 		
 	n = 0;
@@ -4057,8 +4057,8 @@ mDNSlocal mDNSBool	CanReceiveUnicast( void )
 	// Try to bind to the port without the SO_REUSEADDR option to test if someone else has already bound to it.
 	
 	sock = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
-	check_translated_errno( IsValidSocket( sock ), errno_compat(), kUnknownErr );
-	ok = IsValidSocket( sock );
+	check_translated_errno( sock != INVALID_SOCKET, WSAGetLastError(), kUnknownErr );
+	ok = ( sock != INVALID_SOCKET );
 	if( ok )
 	{
 		mDNSPlatformMemZero( &addr, sizeof( addr ) );
@@ -4067,7 +4067,7 @@ mDNSlocal mDNSBool	CanReceiveUnicast( void )
 		addr.sin_addr.s_addr	= htonl( INADDR_ANY );
 		
 		ok = ( bind( sock, (struct sockaddr *) &addr, sizeof( addr ) ) == 0 );
-		close_compat( sock );
+		closesocket( sock );
 	}
 	
 	dlog( kDebugLevelInfo, DEBUG_NAME "Unicast UDP responses %s\n", ok ? "okay" : "*not allowed*" );
@@ -4237,7 +4237,7 @@ TCHARtoUTF8( const TCHAR *inString, char *inBuffer, size_t inBufferSize )
 	int				len;
 	
 	len = WideCharToMultiByte( CP_UTF8, 0, inString, -1, inBuffer, (int) inBufferSize, NULL, NULL );
-	err = translate_errno( len > 0, errno_compat(), kUnknownErr );
+	err = translate_errno( len > 0, GetLastError(), kUnknownErr );
 	require_noerr( err, exit );
 	
 exit:
@@ -4263,20 +4263,20 @@ WindowsLatin1toUTF8( const char *inString, char *inBuffer, size_t inBufferSize )
 	// Windows doesn't support going directly from Latin-1 to UTF-8 so we have to go from Latin-1 to UTF-16 first.
 	
 	len = MultiByteToWideChar( CP_ACP, 0, inString, -1, NULL, 0 );
-	err = translate_errno( len > 0, errno_compat(), kUnknownErr );
+	err = translate_errno( len > 0, GetLastError(), kUnknownErr );
 	require_noerr( err, exit );
 	
 	utf16 = (WCHAR *) malloc( len * sizeof( *utf16 ) );
 	require_action( utf16, exit, err = kNoMemoryErr );
 	
 	len = MultiByteToWideChar( CP_ACP, 0, inString, -1, utf16, len );
-	err = translate_errno( len > 0, errno_compat(), kUnknownErr );
+	err = translate_errno( len > 0, GetLastError(), kUnknownErr );
 	require_noerr( err, exit );
 	
 	// Now convert the temporary UTF-16 to UTF-8.
 	
 	len = WideCharToMultiByte( CP_UTF8, 0, utf16, -1, inBuffer, (int) inBufferSize, NULL, NULL );
-	err = translate_errno( len > 0, errno_compat(), kUnknownErr );
+	err = translate_errno( len > 0, GetLastError(), kUnknownErr );
 	require_noerr( err, exit );
 
 exit:

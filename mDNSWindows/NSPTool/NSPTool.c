@@ -254,11 +254,11 @@ OSStatus	InstallNSP( const char *inName, const char *inGUID, const char *inPath 
 	CharToWCharString( inPath, path );
 	
 	err = WSAStartup( MAKEWORD( 2, 2 ), &wsd );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	require_noerr( err, exit );
 	
 	err = WSCInstallNameSpace( name, path, NS_DNS, 1, &guid );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	WSACleanup();
 	require_noerr( err, exit );
 	
@@ -291,11 +291,11 @@ DEBUG_LOCAL OSStatus	RemoveNSP( const char *inGUID )
 	require_noerr( err, exit );
 	
 	err = WSAStartup( MAKEWORD( 2, 2 ), &wsd );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	require_noerr( err, exit );
 	
 	err = WSCUnInstallNameSpace( &guid );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	WSACleanup();
 	require_noerr( err, exit );
 	
@@ -328,11 +328,11 @@ DEBUG_LOCAL OSStatus	EnableNSP( const char *inGUID, BOOL inEnable )
 	require_noerr( err, exit );
 	
 	err = WSAStartup( MAKEWORD( 2, 2 ), &wsd );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	require_noerr( err, exit );
 	
 	err = WSCEnableNSProvider( &guid, inEnable );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	WSACleanup();
 	require_noerr( err, exit );
 	
@@ -368,7 +368,7 @@ DEBUG_LOCAL OSStatus	ListNameSpaces( void )
 	started	= false;
 	
 	err = WSAStartup( MAKEWORD( 2, 2 ), &wsd );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	require_noerr( err, exit );
 	started = true;
 	
@@ -435,7 +435,7 @@ DEBUG_LOCAL OSStatus	ReorderNameSpaces( void )
 	started	= false;
 		
 	err = WSAStartup( MAKEWORD( 2, 2 ), &wsd );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	require_noerr( err, exit );
 	started = true;
 	
@@ -475,11 +475,11 @@ DEBUG_LOCAL OSStatus	ReorderNameSpaces( void )
 	CharToWCharString( "%SystemRoot%\\System32\\mswsock.dll", path );
 	
 	err = WSCUnInstallNameSpace( &array[ i ].NSProviderId );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	require_noerr( err, exit );
 	
 	err = WSCInstallNameSpace( name, path, NS_DNS, array[ i ].dwVersion, &array[ i ].NSProviderId );
-	err = translate_errno( err == 0, errno_compat(), WSAEINVAL );
+	err = translate_errno( err == 0, WSAGetLastError(), WSAEINVAL );
 	require_noerr( err, exit );
 		
 	// Success!
