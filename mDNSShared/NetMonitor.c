@@ -59,6 +59,12 @@ void setlinebuf( FILE * fp ) {}
 #   include "mDNSPosix.h"      // Defines the specific types needed to run mDNS on this platform
 #endif
 
+#if defined(_DEBUG)
+#ifdef VLD
+#include <vld.h> 
+#endif
+#endif
+
 //*************************************************************************************************************
 // Types and structures
 
