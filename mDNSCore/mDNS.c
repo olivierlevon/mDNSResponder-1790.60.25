@@ -16811,6 +16811,7 @@ mDNSlocal mStatus mDNS_InitStorage(mDNS *const m, mDNS_PlatformSupport *const p,
     m->AuthInfoList             = mDNSNULL;
 
     m->ReverseMap.ThisQInterval = -1;
+    m->AutomaticBrowseDomainQ_Internal.ThisQInterval = -1;
     m->StaticHostname.c[0]      = 0;
     m->FQDN.c[0]                = 0;
     m->Hostnames                = mDNSNULL;
@@ -17485,6 +17486,8 @@ mDNSexport void mDNS_StartExit(mDNS *const m)
     {
         SearchListElem *s;
 
+        uDNS_CleanupWABQueries(m);
+
 #if MDNSRESPONDER_SUPPORTS(COMMON, DNS_LLQ)
         SuspendLLQs(m);
 #endif // MDNSRESPONDER_SUPPORTS(COMMON, DNS_LLQ)
@@ -17629,6 +17632,33 @@ mDNSexport void mDNS_FinalExit(mDNS *const m)
 #if MDNSRESPONDER_SUPPORTS(APPLE, DNSSECv2)
     MDNS_DISPOSE_DNSSEC_OBJ(m->DNSSECTrustAnchorManager);
 #endif
+
+	{
+		DNSServer *s;
+
+		s = m->DNSServers;
+		if (s)
+		{
+			while (s)
+			{
+				DNSServer * nexts = s->next;
+
+				mDNSPlatformMemFree(s);
+				s = nexts;
+			}
+			m->DNSServers = mDNSNULL;
+		}
+	}
+
+	if (m->domainsToDoEnumeration)
+	{
+		mDNSPlatformMemFree(m->domainsToDoEnumeration);
+	}
+
+	if (m->ReverseMap.ThisQInterval != -1)
+	{
+		mDNS_StopQuery_internal(m, &m->ReverseMap);
+	}
 
     LogRedact(MDNS_LOG_CATEGORY_DEFAULT, MDNS_LOG_DEFAULT, "mDNS_FinalExit: done");
 }

@@ -129,11 +129,11 @@ static mDNSu32 n_mquests;  // tracks the current active mcast questions for Mcas
 // 3. AutoBrowseDomains, which is populated by tracking add/rmv events in AutomaticBrowseDomainChange, the callback function for our mDNS_GetDomains call.
 // By creating and removing our own LocalDomainEnumRecords, we trigger AutomaticBrowseDomainChange callbacks just like domains learned from the network would.
 
-mDNSexport DNameListElem *AutoRegistrationDomains;  // Domains where we automatically register for empty-string registrations
+mDNSexport DNameListElem *AutoRegistrationDomains = mDNSNULL;  // Domains where we automatically register for empty-string registrations
 
-static DNameListElem *SCPrefBrowseDomains;          // List of automatic browsing domains read from SCPreferences for "empty string" browsing
-static ARListElem    *LocalDomainEnumRecords;       // List of locally-generated PTR records to augment those we learn from the network
-mDNSexport DNameListElem *AutoBrowseDomains;        // List created from those local-only PTR records plus records we get from the network
+static DNameListElem *SCPrefBrowseDomains = mDNSNULL;          // List of automatic browsing domains read from SCPreferences for "empty string" browsing
+static ARListElem    *LocalDomainEnumRecords = mDNSNULL;       // List of locally-generated PTR records to augment those we learn from the network
+mDNSexport DNameListElem *AutoBrowseDomains = mDNSNULL;        // List created from those local-only PTR records plus records we get from the network
 
 #define MSG_PAD_BYTES 5     // pad message buffer (read from client) with n zero'd bytes to guarantee
                             // n get_string() calls w/o buffer overrun
@@ -5976,6 +5976,18 @@ mDNSexport int udsserver_exit(void)
     // Cancel all outstanding client requests
     while (all_requests) AbortUnlinkAndFree(all_requests);
 
+	if (mDNSStorage.AutomaticBrowseDomainQ_Internal.ThisQInterval != -1) 
+	{
+		mStatus err = mDNS_StopGetDomains(&mDNSStorage, &mDNSStorage.AutomaticBrowseDomainQ_Internal);
+		verbosedebugf("%s AutomaticBrowseDomainQ_Internal %d %m", __FUNCTION__, err, err);
+	}
+
+	RmvAutoBrowseDomain(0, &localdomain);
+
+	DeregisterLocalOnlyDomainEnumPTR(&mDNSStorage, &localdomain, mDNS_DomainTypeRegistration);
+	
+	DeregisterLocalOnlyDomainEnumPTR(&mDNSStorage, &localdomain, mDNS_DomainTypeBrowse);
+
     // Clean up any special mDNSInterface_LocalOnly records we created, both the entries for "local" we
     // created in udsserver_init, and others we created as a result of reading local configuration data
     while (LocalDomainEnumRecords)
@@ -5985,11 +5997,41 @@ mDNSexport int udsserver_exit(void)
         mDNS_Deregister(&mDNSStorage, &rem->ar);
     }
 
+	{
+		DNameListElem **p = &AutoBrowseDomains;
+		while (*p)
+		{
+			DNameListElem *ptr = *p;
+
+			*p = ptr->next;
+			mDNSPlatformMemFree(ptr);
+		}
+
+		p = &AutoRegistrationDomains;
+		while (*p)
+		{
+			DNameListElem *ptr = *p;
+
+			*p = ptr->next;
+			mDNSPlatformMemFree(ptr);
+		}
+
+		p = &SCPrefBrowseDomains;
+		while (*p)
+		{
+			DNameListElem *ptr = *p;
+
+			*p = ptr->next;
+			mDNSPlatformMemFree(ptr);
+		}
+	}
+
     // If the launching environment created no listening socket,
     // that means we created it ourselves, so we should clean it up on exit
     if (dnssd_SocketValid(listenfd))
     {
-        dnssd_close(listenfd);
+        (void)udsSupportRemoveFDFromEventLoop(listenfd, NULL);
+
 #if !defined(USE_TCP_LOOPBACK)
         // Currently, we're unable to remove /var/run/mdnsd because we've changed to userid "nobody"
         // to give up unnecessary privilege, but we need to be root to remove this Unix Domain Socket.

@@ -82,7 +82,6 @@
 #define	kWinSockMinorMin							2
 
 #define kRegistryMaxKeyLength						255
-#define kRegistryMaxValueName						16383
 
 static GUID											kWSARecvMsgGUID = WSAID_WSARECVMSG;
 
@@ -160,6 +159,7 @@ mDNSlocal mDNSBool			IsPointToPoint( IP_ADAPTER_UNICAST_ADDRESS * addr );
 mDNSlocal mStatus			StringToAddress( mDNSAddr * ip, LPSTR string );
 mDNSlocal mStatus			RegQueryString( HKEY key, LPCSTR param, LPSTR * string, DWORD * stringLen, DWORD * enabled );
 mDNSlocal struct ifaddrs*	myGetIfAddrs(int refresh);
+mDNSlocal void				myFreeIfAddrs( void );
 mDNSlocal OSStatus			TCHARtoUTF8( const TCHAR *inString, char *inBuffer, size_t inBufferSize );
 mDNSlocal OSStatus			WindowsLatin1toUTF8( const char *inString, char *inBuffer, size_t inBufferSize );
 mDNSlocal void CALLBACK		TCPSocketNotification( SOCKET sock, LPWSANETWORKEVENTS event, void *context );
@@ -274,7 +274,6 @@ mDNSexport mStatus	mDNSPlatformInit( mDNS * const inMDNS )
 	// Initialize variables. If the PlatformSupport pointer is not null then just assume that a non-Apple client is 
 	// calling mDNS_Init and wants to provide its own storage for the platform-specific data so do not overwrite it.
 	
-	mDNSPlatformMemZero( &gMDNSPlatformSupport, sizeof( gMDNSPlatformSupport ) );
 	if( !inMDNS->p ) inMDNS->p				= &gMDNSPlatformSupport;
 	inMDNS->p->mainThread					= OpenThread( THREAD_ALL_ACCESS, FALSE, GetCurrentThreadId() );
 	require_action( inMDNS->p->mainThread, exit, err = mStatus_UnknownErr );
@@ -451,7 +450,9 @@ mDNSexport void	mDNSPlatformClose( mDNS * const inMDNS )
 			{
 				FreeLibrary( gDNSSDLibrary );
 				gDNSSDLibrary = NULL;
-			}	
+			}
+
+			CloseHandle( gSMBThread );
 		}
 		else
 		{
@@ -461,11 +462,15 @@ mDNSexport void	mDNSPlatformClose( mDNS * const inMDNS )
 		inMDNS->p->smbFileSharing = mDNSfalse;
 	}
 
+	CloseHandle( inMDNS->p->checkFileSharesTimer );
+
 	// Tear everything down in reverse order to how it was set up.
 	
 	err = TearDownInterfaceList( inMDNS );
 	check_noerr( err );
 	check( !inMDNS->p->inactiveInterfaceList );
+
+	myFreeIfAddrs();
 
 #if ( MDNS_WINDOWS_ENABLE_IPV4 )
 
@@ -492,6 +497,8 @@ mDNSexport void	mDNSPlatformClose( mDNS * const inMDNS )
 #endif
 
 	CloseHandle(inMDNS->p->mainThread);
+
+	while ( SleepEx( 0, TRUE ) == WAIT_IO_COMPLETION ) { } // Let QueueUserAPC / FreeInterface do their job
 
 	WSACleanup();
 	
@@ -1710,7 +1717,7 @@ SetSearchDomainList( void )
 
 exit:
 
-	if ( searchList ) 
+	if ( searchList )
 	{
 		free( searchList );
 	}
@@ -4206,23 +4213,37 @@ exit:
 //	myGetIfAddrs
 //===========================================================================================================================
 
+static struct ifaddrs *myifa = NULL;
+
 mDNSlocal struct ifaddrs*
 myGetIfAddrs(int refresh)
 {
-	static struct ifaddrs *ifa = NULL;
-	
-	if (refresh && ifa)
+	if (refresh && myifa)
 	{
-		freeifaddrs(ifa);
-		ifa = NULL;
+		freeifaddrs(myifa);
+		myifa = NULL;
 	}
 	
-	if (ifa == NULL)
+	if (myifa == NULL)
 	{
-		getifaddrs(&ifa);
+		getifaddrs(&myifa);
 	}
 	
-	return ifa;
+	return myifa;
+}
+
+
+//===========================================================================================================================
+//	myFreeIfAddrs
+//===========================================================================================================================
+
+mDNSexport void myFreeIfAddrs( void )
+{
+	if (myifa != NULL)
+	{
+		freeifaddrs(myifa);
+		myifa = NULL;
+	}
 }
 
 //===========================================================================================================================

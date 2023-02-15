@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 4 -*-
  *
- * Copyright (c) 2002-2004 Apple Computer, Inc. All rights reserved.
+ * Copyright (c) 2002-2023 Apple, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
  */
 
 #include "Poll.h"
+
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -25,8 +26,11 @@
 #include <ws2tcpip.h>
 #include <windows.h>
 #include <process.h>
+
 #include "GenLinkedList.h"
 #include "DebugServices.h"
+
+#define MAX_SOURCES MAXIMUM_WAIT_OBJECTS
 
 
 typedef struct PollSource_struct
@@ -37,13 +41,12 @@ typedef struct PollSource_struct
 
 	union
 	{
-		mDNSPollSocketCallback socket;
-		mDNSPollEventCallback event;
+		mDNSPollSocketCallback	socket;
+		mDNSPollEventCallback	event;
 	} callback;
 
 	struct Worker_struct		*worker;
 	struct PollSource_struct	*next;
-
 } PollSource;
 
 
@@ -57,24 +60,24 @@ typedef struct Worker_struct
 	BOOL					done;		// Not used for main worker
 
 	DWORD					numSources;
-	PollSource				*sources[ MAXIMUM_WAIT_OBJECTS ];
-	HANDLE					handles[ MAXIMUM_WAIT_OBJECTS ];
+	PollSource				*sources[ MAX_SOURCES ];
+	HANDLE					handles[ MAX_SOURCES ];
 	DWORD					result;
+	DWORD					error;  // store detailed error code associated to result when result is WAIT_FAILED, 0 otherwise
 	struct Worker_struct	*next;
 } Worker;
 
 
 typedef struct Poll_struct
 {
-	mDNSBool		setup;
+	mDNSBool		setup;   // true if poll mechanism already initialized
 	HANDLE			wakeup;
 	GenLinkedList	sources;
 	DWORD			numSources;
 	Worker			main;
 	GenLinkedList	workers;
-	HANDLE			workerHandles[ MAXIMUM_WAIT_OBJECTS ];
+	HANDLE			workerHandles[ MAX_SOURCES ]; // store handles for stop event
 	DWORD			numWorkers;
-
 } Poll;
 
 
@@ -82,12 +85,11 @@ typedef struct Poll_struct
  * Poll Methods
  */
 
-mDNSlocal mStatus			PollSetup();
-mDNSlocal mStatus			PollRegisterSource( PollSource *source ); 
-mDNSlocal void				PollUnregisterSource( PollSource *source );
-mDNSlocal mStatus			PollStartWorkers();
-mDNSlocal mStatus			PollStopWorkers();
-mDNSlocal void				PollRemoveWorker( Worker *worker );
+mDNSlocal mStatus			PollRegisterSource( PollSource *source );
+mDNSlocal mStatus			PollUnregisterSource( PollSource *source );
+mDNSlocal mStatus			PollStartWorkers( void );
+mDNSlocal mStatus			PollStopWorkers( void );
+mDNSlocal mStatus			PollRemoveWorker( Worker *worker );
 
 
 /*
@@ -104,41 +106,80 @@ mDNSlocal void CALLBACK		WorkerWakeupNotification( HANDLE event, void *context )
 mDNSlocal unsigned WINAPI	WorkerMain( LPVOID inParam );
 
 
-static void
-ShiftDown( void * arr, size_t arraySize, size_t itemSize, int index )
+#define	DEBUG_NAME	"[mDNSWin32poll] "
+
+mDNSlocal Poll gPoll = { mDNSfalse, NULL };
+
+
+static char *win32_strerror(DWORD inErrorCode)
+{
+    static char buffer[1024];
+    DWORD n;
+
+    memset(buffer, 0, sizeof(buffer));
+    n = FormatMessageA(
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        inErrorCode,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        buffer,
+        sizeof(buffer),
+        NULL);
+    if (n > 0)
+    {
+        // Remove any trailing CR's or LF's since some messages have them.
+        while ((n > 0) && isspace(((unsigned char *) buffer)[n - 1]))
+            buffer[--n] = '\0';
+    }
+    return buffer;
+}
+
+
+mDNSlocal void ShiftDown( void * arr, size_t arraySize, size_t itemSize, int index )
 {
     memmove( ( ( unsigned char* ) arr ) + ( ( index - 1 ) * itemSize ), ( ( unsigned char* ) arr ) + ( index * itemSize ), ( arraySize - index ) * itemSize );
 }
 
-
-#define	DEBUG_NAME	"[mDNSWin32] "
-#define gMDNSRecord mDNSStorage
-mDNSlocal Poll gPoll;
-
-#define LogErr( err, FUNC ) LogMsg( "%s:%d - %s failed: %d\n", __FUNCTION__, __LINE__, FUNC, err );
-
-
-mStatus
-mDNSPollRegisterSocket( SOCKET socket, int networkEvents, mDNSPollSocketCallback callback, void *context )
+// Add socket to poll list
+mDNSexport mStatus mDNSPollRegisterSocket( SOCKET socket, int networkEvents, mDNSPollSocketCallback callback, void *context )
 {
 	PollSource	*source = NULL;
-	HANDLE		event = INVALID_HANDLE_VALUE;
-	mStatus		err = mStatus_NoError;
+	HANDLE		event = WSA_INVALID_EVENT;
+	mStatus		err = mStatus_UnknownErr;
+	DWORD		ret;
 
-	if ( !gPoll.setup )
+	if ( socket == INVALID_SOCKET )
 	{
-		err = PollSetup();
-		require_noerr( err, exit );
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollRegisterSocket: socket is not valid, exiting !\n" );
+		err = mStatus_BadParamErr;
+		goto exit;
 	}
 
-	source = malloc( sizeof( PollSource ) );
-	require_action( source, exit, err = mStatus_NoMemoryErr );
+	source = (PollSource *) malloc( sizeof( PollSource ) );
+	if ( source == NULL )
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollRegisterSocket: malloc error\n" );
+		err = mStatus_NoMemoryErr;
+		goto exit;
+	}
 
 	event = WSACreateEvent();
-	require_action( event, exit, err = mStatus_NoMemoryErr );
+	if ( event == WSA_INVALID_EVENT )
+	{
+		ret = (DWORD)WSAGetLastError();
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollRegisterSocket: WSACreateEvent error %u %s\n", ret, win32_strerror( ret ));
+		err = mStatus_UnknownErr;
+		goto exit;
+	}
 
-	err = WSAEventSelect( socket, event, networkEvents );
-	require_noerr( err, exit );
+	ret = WSAEventSelect( socket, event, networkEvents );
+	if ( ret == SOCKET_ERROR )
+	{
+		ret = (DWORD)WSAGetLastError();
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollRegisterSocket: WSAEventSelect error %u %s\n", ret, win32_strerror( ret ));
+		err = mStatus_UnknownErr;
+		goto exit;
+	}
 
 	source->socket = socket;
 	source->handle = event;
@@ -146,142 +187,206 @@ mDNSPollRegisterSocket( SOCKET socket, int networkEvents, mDNSPollSocketCallback
 	source->context = context;
 
 	err = PollRegisterSource( source );
-	require_noerr( err, exit );
+	if ( err != mStatus_NoError )
+		goto exit;
+	
+	err = mStatus_NoError;
 	
 exit:
 
 	if ( err != mStatus_NoError )
 	{
-		if ( event != INVALID_HANDLE_VALUE )
+		if ( event != WSA_INVALID_EVENT )
 		{
-			WSACloseEvent( event );
+			BOOL ok;
+			
+			ok = WSACloseEvent( event );
+			if ( !ok )
+			{
+				ret = (DWORD)WSAGetLastError();
+				dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollRegisterSocket: WSACloseEvent failed %u %s\n", ret, win32_strerror( ret ) );
+			}
 		}
 
 		if ( source != NULL )
-		{
 			free( source );
-		}
 	}
 
 	return err;
 }
 
-
-void
-mDNSPollUnregisterSocket( SOCKET socket )
+// Remove socket from poll list
+mDNSexport mStatus mDNSPollUnregisterSocket( SOCKET socket )
 {
 	PollSource	*source;
+	mStatus		err = mStatus_UnknownErr;
 
-	for ( source = gPoll.sources.Head; source; source = source->next )
+	if ( socket == INVALID_SOCKET )
 	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollUnregisterSocket: socket is not valid, exiting !\n" );
+		return mStatus_BadParamErr;
+	}
+
+	// Look for socket in the list
+	for ( source = (PollSource *)gPoll.sources.Head; source; source = source->next )
 		if ( source->socket == socket )
-		{
 			break;
+
+	// socket found in list ?
+	if ( source != NULL )
+	{
+		BOOL ok;
+		
+		ok = WSACloseEvent( source->handle );
+		if ( !ok )
+		{
+			DWORD ret = (DWORD)WSAGetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollUnregisterSocket: WSACloseEvent failed %u %s\n", ret, win32_strerror( ret ) );
 		}
+
+		(void)PollUnregisterSource( source );
+
+		free( source );
+
+		err = mStatus_NoError;
+	}
+	else
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollUnregisterSocket: source for socket %u not found \n", socket );
+		err = mStatus_BadParamErr;
 	}
 
-	if ( source )
-	{
-		WSACloseEvent( source->handle );
-		PollUnregisterSource( source );
-		free( source );
-	}
+	return err;
 }
 
-
-mStatus
-mDNSPollRegisterEvent( HANDLE event, mDNSPollEventCallback callback, void *context )
+// Add event to poll list
+mDNSexport mStatus mDNSPollRegisterEvent( HANDLE event, mDNSPollEventCallback callback, void *context )
 {
 	PollSource	*source = NULL;
-	mStatus		err = mStatus_NoError;
+	mStatus		err = mStatus_UnknownErr;
 
-	if ( !gPoll.setup )
+	if ( event == WSA_INVALID_EVENT || event == NULL )
 	{
-		err = PollSetup();
-		require_noerr( err, exit );
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollUnregisterEvent: invalid event, exiting !\n" );
+		err = mStatus_BadParamErr;
+		goto exit;
 	}
-
-	source = malloc( sizeof( PollSource ) );
-	require_action( source, exit, err = mStatus_NoMemoryErr );
+	
+	source = (PollSource *) malloc( sizeof( PollSource ) );
+	if ( source == NULL )
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollRegisterEvent: malloc error\n" );
+		err = mStatus_NoMemoryErr;
+		goto exit;
+	}
 
 	source->socket = INVALID_SOCKET;
 	source->handle = event;
 	source->callback.event = callback;
 	source->context = context;
 
-	err = PollRegisterSource( source ); 
-	require_noerr( err, exit );
+	err = PollRegisterSource( source );
+	if ( err != mStatus_NoError )
+		goto exit;
+	
+	err = mStatus_NoError;
 	
 exit:
 
 	if ( err != mStatus_NoError )
-	{
 		if ( source != NULL )
-		{
 			free( source );
-		}
+
+	return err;
+}
+
+// Remove event from poll list
+mDNSexport mStatus mDNSPollUnregisterEvent( HANDLE event )
+{
+	PollSource	*source;
+	mStatus		err = mStatus_UnknownErr;
+
+	if ( event == WSA_INVALID_EVENT || event == NULL )
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollUnregisterEvent: invalid event, exiting !\n" );
+		err = mStatus_BadParamErr;
+		return err;
+	}
+
+	// Look for event in the list
+	for ( source = (PollSource *)gPoll.sources.Head; source; source = source->next )
+		if ( source->handle == event )
+			break;
+
+	// event found in list ?
+	if ( source != NULL )
+	{
+		(void)PollUnregisterSource( source );
+
+		free( source );
+
+		err = mStatus_NoError;
+	}
+	else
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPollUnregisterEvent: source for handle %p not found \n", event );
+		err = mStatus_BadParamErr;
 	}
 
 	return err;
 }
 
-
-void
-mDNSPollUnregisterEvent( HANDLE event )
-{
-	PollSource	*source;
-
-	for ( source = gPoll.sources.Head; source; source = source->next )
-	{
-		if ( source->handle == event )
-		{
-			break;
-		}
-	}
-
-	if ( source )
-	{
-		PollUnregisterSource( source );
-		free( source );
-	}
-}
-
-
-mStatus
-mDNSPoll( DWORD msec )
+// Poll for event with msec time-out interval, in milliseconds.
+// If a nonzero value is specified, the function waits until the specified objects are signaled or the interval elapses.
+// If dwMilliseconds is zero, the function does not enter a wait state if the specified objects are not signaled; it always returns immediately.
+// If dwMilliseconds is INFINITE, the function will return only when the specified objects are signaled.
+mDNSexport mStatus mDNSPoll( DWORD msec )
 {
 	mStatus err = mStatus_NoError;
 
 	if ( gPoll.numWorkers > 0 )
 	{	
 		err = PollStartWorkers();
-		require_noerr( err, exit );
+		if ( err != mStatus_NoError )
+		{
+			goto exit;
+		}
 	}
 
 	gPoll.main.result = WaitForMultipleObjects( gPoll.main.numSources, gPoll.main.handles, FALSE, msec );
-	err = translate_errno( ( gPoll.main.result != WAIT_FAILED ), ( mStatus ) GetLastError(), kUnknownErr );
-	if ( err ) LogErr( err, "WaitForMultipleObjects()" );
-	require_action( gPoll.main.result != WAIT_FAILED, exit, err = ( mStatus ) GetLastError() );
+	if ( gPoll.main.result == WAIT_FAILED )
+	{
+		DWORD ret = GetLastError();
+		dlog( kDebugLevelVerbose, DEBUG_NAME "mDNSPoll: WaitForMultipleObjects WAIT_FAILED %u %s\n", ret, win32_strerror( ret ) );
+		gPoll.main.error = ret;
+		err = mStatus_UnknownErr;
+	}
+	else
+		gPoll.main.error = 0;
 
 	if ( gPoll.numWorkers > 0 )
 	{
 		err = PollStopWorkers();
-		require_noerr( err, exit );
+		if ( err != mStatus_NoError )
+		{
+			goto exit;
+		}
 	}
 
 	WorkerDispatch( &gPoll.main );
 
 exit:
 
-	return ( err );
+	return err;
 }
 
-
-mDNSlocal mStatus
-PollSetup()
+mDNSexport mStatus PollSetup( void )
 {
-	mStatus err = mStatus_NoError;
+	mStatus err = mStatus_UnknownErr;
 
+	verbosedebugf(DEBUG_NAME "%s ", __FUNCTION__);
+
+	// Setup already done ?
 	if ( !gPoll.setup )
 	{
 		memset( &gPoll, 0, sizeof( gPoll ) );
@@ -290,12 +395,26 @@ PollSetup()
 		InitLinkedList( &gPoll.workers, offsetof( Worker, next ) );
 
 		gPoll.wakeup = CreateEvent( NULL, TRUE, FALSE, NULL );
-		require_action( gPoll.wakeup, exit, err = mStatus_NoMemoryErr );
+		if ( gPoll.wakeup == INVALID_HANDLE_VALUE)
+		{
+			DWORD ret = GetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "PollSetup: CreateEvent error %u %s\n", ret, win32_strerror( ret ) );
+			err = mStatus_UnknownErr;
+			goto exit;
+		}
 
 		err = WorkerInit( &gPoll.main );
-		require_noerr( err, exit );
+		if ( err != mStatus_NoError )
+			goto exit;
 		
-		gPoll.setup = mDNStrue;
+		gPoll.setup = mDNStrue; // Init complete
+		
+		err = mStatus_NoError;
+	}
+	else
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollSetup: setup already done !\n" );
+		err = mStatus_BadParamErr;
 	}
 
 exit:
@@ -303,60 +422,144 @@ exit:
 	return err;
 }
 
+mDNSexport mStatus PollCleanup( void )
+{
+	mStatus err = mStatus_UnknownErr;
+	
+	verbosedebugf(DEBUG_NAME "%s gPoll.setup %d", __FUNCTION__, gPoll.setup);
 
-mDNSlocal mStatus
-PollRegisterSource( PollSource *source )
+	// Setup already done ?
+	if ( gPoll.setup )
+	{
+		BOOL ok;
+		
+		ok = CloseHandle( gPoll.wakeup );
+		if ( !ok )
+		{
+			DWORD ret = GetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "PollCleanup: CloseHandle failed %u %s\n", ret, win32_strerror( ret ) );
+		}		
+		gPoll.wakeup = NULL;
+
+		if ( gPoll.workers.Head )
+		{
+			Worker *worker;
+
+			dlog( kDebugLevelVerbose, DEBUG_NAME "PollCleanup: Poll list not empty, leak(s) will happen, did you forget to unregister some event(s)/sockets(s) ?\n" );
+#ifdef DEBUG
+			if ( gPoll.numSources )
+				dlog( kDebugLevelVerbose, DEBUG_NAME "PollCleanup: Poll leaking, numSources not 0 : %u\n", gPoll.numSources );
+			if ( gPoll.main.numSources > 1 )
+				dlog( kDebugLevelVerbose, DEBUG_NAME "PollCleanup: Poll leaking, main numSources not 0 : %u\n", gPoll.main.numSources );
+#endif
+			
+			worker = ( Worker *)gPoll.workers.Head;
+			while ( worker )
+			{
+				Worker *tmp;
+
+				tmp = worker;
+				worker = worker->next;
+
+				WorkerFree( tmp );
+			}
+		}
+
+		WorkerFree( &gPoll.main );
+
+		memset( &gPoll, 0, sizeof( gPoll ) );  // Erase everything
+
+		gPoll.setup = mDNSfalse;               // Cleanup complete
+		
+		err = mStatus_NoError;
+	}
+	else
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollCleanup: setup never done before !\n" );
+		err = mStatus_BadParamErr;
+	}
+
+	return err;
+}
+
+mDNSlocal mStatus PollRegisterSource( PollSource *source )
 {
 	Worker	*worker = NULL;
-	mStatus err = mStatus_NoError;
+	mStatus err = mStatus_UnknownErr;
 
 	AddToTail( &gPoll.sources, source );
 	gPoll.numSources++;
 
 	// First check our main worker. In most cases, we won't have to worry about threads
-
-	if ( gPoll.main.numSources < MAXIMUM_WAIT_OBJECTS )
+	if ( gPoll.main.numSources < MAX_SOURCES )
 	{
 		WorkerRegisterSource( &gPoll.main, source );
 	}
 	else
 	{
 		// Try to find a thread to use that we've already created
-
-		for ( worker = gPoll.workers.Head; worker; worker = worker->next )
+		for ( worker = (Worker *)gPoll.workers.Head; worker; worker = worker->next )
 		{
-			if ( worker->numSources < MAXIMUM_WAIT_OBJECTS )
+			if ( worker->numSources < MAX_SOURCES )
 			{
 				WorkerRegisterSource( worker, source );
 				break;
 			}
 		}
 
-		// If not, then create a worker and make a thread to run it in
-		
-		if ( !worker )
+		// If not (no worker or full), then create a new worker and make a thread to run it in
+		if ( worker == NULL )
 		{
-			worker = ( Worker* ) malloc( sizeof( Worker ) );			
-			require_action( worker, exit, err = mStatus_NoMemoryErr );
+			DWORD ret;
+			uintptr_t th;
 
+			worker = ( Worker *) malloc( sizeof( Worker ) );
+			if ( worker == NULL )
+			{
+				dlog( kDebugLevelVerbose, DEBUG_NAME "PollRegisterSource: malloc error\n" );
+				err = mStatus_NoMemoryErr;
+				goto exit;
+			}
+	
 			memset( worker, 0, sizeof( Worker ) );
 
 			worker->start = CreateEvent( NULL, FALSE, FALSE, NULL );
-			require_action( worker->start, exit, err = mStatus_NoMemoryErr );
+			if ( worker->start == INVALID_HANDLE_VALUE)
+			{
+				ret = GetLastError();
+				dlog( kDebugLevelVerbose, DEBUG_NAME "PollRegisterSource: CreateEvent (start) error %u %s\n", ret, win32_strerror( ret ) );
+				err = mStatus_UnknownErr;
+				goto exit;
+			}
 
 			worker->stop = CreateEvent( NULL, FALSE, FALSE, NULL );
-			require_action( worker->stop, exit, err = mStatus_NoMemoryErr );
+			if ( worker->stop == INVALID_HANDLE_VALUE)
+			{
+				ret = GetLastError();
+				dlog( kDebugLevelVerbose, DEBUG_NAME "PollRegisterSource: CreateEvent (stop) error %u %s\n", ret, win32_strerror( ret ) );
+				err = mStatus_UnknownErr;
+				goto exit;
+			}
 
 			err = WorkerInit( worker );
-			require_noerr( err, exit );
+			if ( err != mStatus_NoError )
+			{
+				goto exit;
+			}
 
 			// Create thread with _beginthreadex() instead of CreateThread() to avoid
 			// memory leaks when using static run-time libraries.
 			// See <http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dllproc/base/createthread.asp>.
-
-			worker->thread = ( HANDLE ) _beginthreadex( NULL, 0, WorkerMain, worker, 0, &worker->id );
-			err = translate_errno( worker->thread, ( mStatus ) GetLastError(), kUnknownErr );
-			require_noerr( err, exit );
+			th = _beginthreadex( NULL, 0, WorkerMain, worker, 0, &worker->id );
+			if ( th == 0 )
+			{
+				int eno = errno;
+				dlog( kDebugLevelVerbose, DEBUG_NAME "PollRegisterSource: _beginthreadex failed %d %s\n", eno, strerror( eno ) );
+				err = mStatus_UnknownErr;
+				goto exit;
+			}
+			else
+				worker->thread = ( HANDLE ) th;
 
 			AddToTail( &gPoll.workers, worker );
 			gPoll.workerHandles[ gPoll.numWorkers++ ] = worker->stop;
@@ -364,157 +567,171 @@ PollRegisterSource( PollSource *source )
 			WorkerRegisterSource( worker, source );
 		}
 	}
+	
+	err = mStatus_NoError;
 
 exit:
 
-	if ( err && worker )
-	{
+	if ( ( err != mStatus_NoError ) && worker )
 		WorkerFree( worker );
-	}
 
 	return err;
 }
 
-
-mDNSlocal void
-PollUnregisterSource( PollSource *source )
+mDNSlocal mStatus PollUnregisterSource( PollSource *source )
 {
-	RemoveFromList( &gPoll.sources, source );
+	int ret = RemoveFromList( &gPoll.sources, source );
+	if ( ret == 0 )
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollUnregisterSource: source %p not found\n", source );
+		return mStatus_BadParamErr;
+	}
+	
 	gPoll.numSources--;
 
 	WorkerUnregisterSource( source->worker, source );
+	
+	return mStatus_NoError;
 }
 
-
-mDNSlocal mStatus
-PollStartWorkers()
+mDNSlocal mStatus PollStartWorkers( void )
 {
 	Worker	*worker;
+	Worker	*next;
 	mStatus	err = mStatus_NoError;
 	BOOL	ok;
 
-	dlog( kDebugLevelChatty, DEBUG_NAME "starting workers\n" );
+	dlog( kDebugLevelChatty, DEBUG_NAME "PollStartWorkers: starting workers\n" );
 	
-	worker = gPoll.workers.Head;
-
+	worker = (Worker *)gPoll.workers.Head;
 	while ( worker )
 	{
-		Worker *next = worker->next;
+		next = worker->next;
 
 		if ( worker->numSources == 1 )
 		{
-			PollRemoveWorker( worker );
+			(void)PollRemoveWorker( worker );
 		}
 		else
 		{
-			dlog( kDebugLevelChatty, DEBUG_NAME "waking up worker\n" );
+			dlog( kDebugLevelChatty, DEBUG_NAME "PollStartWorkers: waking up worker\n" );
 
 			ok = SetEvent( worker->start );
-			err = translate_errno( ok, ( mStatus ) GetLastError(), kUnknownErr );
-			if ( err ) LogErr( err, "SetEvent()" );
-
-			if ( err )
+			if ( !ok )
 			{
-				PollRemoveWorker( worker );
+				DWORD ret = GetLastError();
+				dlog( kDebugLevelVerbose, DEBUG_NAME "PollStartWorkers: SetEvent failed %u %s\n", ret, win32_strerror( ret ) );
+				err = mStatus_UnknownErr;
 			}
+
+			if ( err != mStatus_NoError )
+				(void)PollRemoveWorker( worker );
 		}
 
 		worker = next;
 	}
 
-	err = mStatus_NoError;
-
 	return err;
 }
 
-
-mDNSlocal mStatus
-PollStopWorkers()
+mDNSlocal mStatus PollStopWorkers( void )
 {
 	DWORD	result;
 	Worker	*worker;
 	BOOL	ok;
 	mStatus	err = mStatus_NoError;
 
-	dlog( kDebugLevelChatty, DEBUG_NAME "stopping workers\n" );
+	dlog( kDebugLevelChatty, DEBUG_NAME "PollStopWorkers: stopping workers\n" );
 	
 	ok = SetEvent( gPoll.wakeup );
-	err = translate_errno( ok, ( mStatus ) GetLastError(), kUnknownErr );
-	if ( err ) LogErr( err, "SetEvent()" );
-
-	// Wait For 5 seconds for all the workers to wake up
-
-	result = WaitForMultipleObjects( gPoll.numWorkers, gPoll.workerHandles, TRUE, 5000 );
-	err = translate_errno( ( result != WAIT_FAILED ), ( mStatus ) GetLastError(), kUnknownErr );
-	if ( err ) LogErr( err, "WaitForMultipleObjects()" );
-
-	ok = ResetEvent( gPoll.wakeup );
-	err = translate_errno( ok, ( mStatus ) GetLastError(), kUnknownErr );
-	if ( err ) LogErr( err, "ResetEvent()" );
-
-	for ( worker = gPoll.workers.Head; worker; worker = worker->next )
+	if ( !ok )
 	{
-		WorkerDispatch( worker );
+		DWORD ret = GetLastError();
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollStopWorkers: SetEvent failed %u %s\n", ret, win32_strerror( ret ) );
+		err = mStatus_UnknownErr;
 	}
 
-	err = mStatus_NoError;
+	// Wait For 5 seconds for all the workers to wake up
+	result = WaitForMultipleObjects( gPoll.numWorkers, gPoll.workerHandles, TRUE, 5000 );
+	if ( result == WAIT_FAILED )
+	{
+		DWORD ret = GetLastError();
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollStopWorkers: WaitForSingleObject failed WAIT_FAILED %u %s\n", ret, win32_strerror( ret ) );
+		err = mStatus_UnknownErr;
+	}
+
+	ok = ResetEvent( gPoll.wakeup );
+	if ( !ok )
+	{
+		DWORD ret = GetLastError();
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollStopWorkers: ResetEvent failed %u %s\n", ret, win32_strerror( ret ) );
+		err = mStatus_UnknownErr;
+	}
+
+	for ( worker = (Worker *)gPoll.workers.Head; worker; worker = worker->next )
+		WorkerDispatch( worker );
 
 	return err;
 }
 
-
-mDNSlocal void
-PollRemoveWorker( Worker *worker )
+mDNSlocal mStatus PollRemoveWorker( Worker *worker )
 {
 	DWORD	result;
-	mStatus	err;
+	mStatus	err = mStatus_UnknownErr;
 	BOOL	ok;
 	DWORD	i;
+	int		rc;
 
-	dlog( kDebugLevelChatty, DEBUG_NAME "removing worker %d\n", worker->id );
+	dlog( kDebugLevelChatty, DEBUG_NAME "PollRemoveWorker: removing worker %u\n", worker->id );
 	
-	RemoveFromList( &gPoll.workers, worker );
+	rc = RemoveFromList( &gPoll.workers, worker );
+	if ( rc == 0 )
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollRemoveWorker: worker %u not found\n", worker->id );
 
 	// Remove handle from gPoll.workerHandles
-
 	for ( i = 0; i < gPoll.numWorkers; i++ )
-	{
 		if ( gPoll.workerHandles[ i ] == worker->stop )
 		{
 			ShiftDown( gPoll.workerHandles, gPoll.numWorkers, sizeof( gPoll.workerHandles[ 0 ] ), i + 1 );
 			break;
 		}
-	}
 
 	worker->done = TRUE;
 	gPoll.numWorkers--;
 
 	// Cause the thread to exit.
-
 	ok = SetEvent( worker->start );
-	err = translate_errno( ok, ( OSStatus ) GetLastError(), kUnknownErr );
-	if ( err ) LogErr( err, "SetEvent()" );
+	if ( !ok )
+	{
+		DWORD ret = GetLastError();
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollRemoveWorker: SetEvent failed %u %s\n", ret, win32_strerror( ret ) );
+		err = mStatus_UnknownErr;
+	}
 			
 	result = WaitForSingleObject( worker->thread, 5000 );
-	err = translate_errno( result != WAIT_FAILED, ( OSStatus ) GetLastError(), kUnknownErr );
-	if ( err ) LogErr( err, "WaitForSingleObject()" );
-			
-	if ( ( result == WAIT_FAILED ) || ( result == WAIT_TIMEOUT ) )
+	if ( result == WAIT_FAILED )
 	{
-		ok = TerminateThread( worker->thread, 0 );
-		err = translate_errno( ok, ( OSStatus ) GetLastError(), kUnknownErr );
-		if ( err ) LogErr( err, "TerminateThread()" );
+		DWORD ret = GetLastError();
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollRemoveWorker: WaitForSingleObject failed WAIT_FAILED %u %s\n", ret, win32_strerror( ret ) );
+		err = mStatus_UnknownErr;
+	}
+	else if ( result == WAIT_TIMEOUT )
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollRemoveWorker: timeout\n" );
+	}
+	else if ( result == WAIT_ABANDONED )
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "PollRemoveWorker: WAIT_ABANDONED\n" );
 	}
 	
-	CloseHandle( worker->thread );
-	worker->thread = NULL;
-
 	WorkerFree( worker );
+	
+	err = mStatus_NoError;
+
+	return err;
 }
 
-
-mDNSlocal void
-WorkerRegisterSource( Worker *worker, PollSource *source )
+mDNSlocal void WorkerRegisterSource( Worker *worker, PollSource *source )
 {
 	source->worker = worker;
 	worker->sources[ worker->numSources ] = source;
@@ -522,35 +739,26 @@ WorkerRegisterSource( Worker *worker, PollSource *source )
 	worker->numSources++;
 }
 
-
-mDNSlocal int
-WorkerSourceToIndex( Worker *worker, PollSource *source )
+mDNSlocal int WorkerSourceToIndex( Worker *worker, PollSource *source )
 {
 	int index;
 
 	for ( index = 0; index < ( int ) worker->numSources; index++ )
-	{
 		if ( worker->sources[ index ] == source )
-		{
 			break;
-		}
-	}
 
 	if ( index == ( int ) worker->numSources )
-	{
 		index = -1;
-	}
 
 	return index;
 }
 
-
-mDNSlocal void
-WorkerUnregisterSource( Worker *worker, PollSource *source )
+mDNSlocal void WorkerUnregisterSource( Worker *worker, PollSource *source )
 {
-	int sourceIndex = WorkerSourceToIndex( worker, source );
+	int   sourceIndex;
 	DWORD delta;
 
+	sourceIndex = WorkerSourceToIndex( worker, source );
 	if ( sourceIndex == -1 )
 	{
 		LogMsg( "WorkerUnregisterSource: source not found in list" );
@@ -560,13 +768,12 @@ WorkerUnregisterSource( Worker *worker, PollSource *source )
 	delta = ( worker->numSources - sourceIndex - 1 );
 
 	// If this source is not at the end of the list, then move memory
-
 	if ( delta > 0 )
 	{
 		ShiftDown( worker->sources, worker->numSources, sizeof( worker->sources[ 0 ] ), sourceIndex + 1 );
 		ShiftDown( worker->handles, worker->numSources, sizeof( worker->handles[ 0 ] ), sourceIndex + 1 );
 	}
-		         
+
 	worker->numSources--;
 
 exit:
@@ -574,57 +781,61 @@ exit:
 	return;
 }
 
-
-mDNSlocal void CALLBACK
-WorkerWakeupNotification( HANDLE event, void *context )
+mDNSlocal void CALLBACK WorkerWakeupNotification( HANDLE event, void *context )
 {
-	DEBUG_UNUSED( event );
-	DEBUG_UNUSED( context );
+	(void) event;
+	(void) context;
 
-	dlog( kDebugLevelChatty, DEBUG_NAME "Worker thread wakeup\n" );
+	dlog( kDebugLevelChatty, DEBUG_NAME "WorkerWakeupNotification: Worker thread wakeup\n" );
 }
 
-
-mDNSlocal void
-WorkerDispatch( Worker *worker )
+mDNSlocal void WorkerDispatch( Worker *worker )
 {
 	if ( worker->result == WAIT_FAILED )
 	{
-		/* What should we do here? */
+		/* What should we do here ? */
+		
+		// Log something, even if it has already been done !!
+		dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerDispatch: worker WAIT_FAILED error %u %s\n", worker->error, win32_strerror( worker->error ) );
 	}
 	else if ( worker->result == WAIT_TIMEOUT )
 	{
-		dlog( kDebugLevelChatty, DEBUG_NAME "timeout\n" );
+		dlog( kDebugLevelChatty, DEBUG_NAME "WorkerDispatch: timeout\n" );
+	}
+	else if ( worker->result == WAIT_ABANDONED ) // That one should not happen, but in case
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerDispatch: WAIT_ABANDONED\n" );
 	}
 	else
 	{
-		DWORD		waitItemIndex = ( DWORD )( ( ( int ) worker->result ) - WAIT_OBJECT_0 );
+		DWORD		waitItemIndex = ( DWORD )( ( ( int ) worker->result ) - WAIT_OBJECT_0 ); // get index of signaled source
 		PollSource	*source = NULL;
 
 		// Sanity check
-
 		if ( waitItemIndex >= worker->numSources )
 		{
-			LogMsg( "WorkerDispatch: waitItemIndex (%d) is >= numSources (%d)", waitItemIndex, worker->numSources );
+			LogMsg( "WorkerDispatch: waitItemIndex (%u) is >= numSources (%u)", waitItemIndex, worker->numSources );
 			goto exit;
 		}
 
-		source = worker->sources[ waitItemIndex ];
+		source = worker->sources[ waitItemIndex ];  // get signaled source from his index
 
-		if ( source->socket != INVALID_SOCKET )
+		if ( source->socket != INVALID_SOCKET )     // event for a socket, call socket callback
 		{
 			WSANETWORKEVENTS event;
+			int ret;
 	
-			if ( WSAEnumNetworkEvents( source->socket, source->handle, &event ) == 0 )
+			ret = WSAEnumNetworkEvents( source->socket, source->handle, &event );
+			if ( ret == SOCKET_ERROR )
 			{
-				source->callback.socket( source->socket, &event, source->context );
-			}
-			else
-			{
+				DWORD err = (DWORD)WSAGetLastError();
+				dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerDispatch: WSAEnumNetworkEvents error %u %s\n", err, win32_strerror( err ));
 				source->callback.socket( source->socket, NULL, source->context );
 			}
+			else
+				source->callback.socket( source->socket, &event, source->context );
 		}
-		else
+		else // event for handle, call event callback
 		{
 			source->callback.event( source->handle, source->context );
 		}
@@ -635,17 +846,25 @@ exit:
 	return;
 }
 
-
-mDNSlocal mStatus
-WorkerInit( Worker *worker )
+mDNSlocal mStatus WorkerInit( Worker *worker )
 {
-	PollSource *source = NULL;
-	mStatus err = mStatus_NoError;
-	
-	require_action( worker, exit, err = mStatus_BadParamErr );
+	PollSource	*source = NULL;
+	mStatus		err = mStatus_NoError;
 
-	source = malloc( sizeof( PollSource ) );
-	require_action( source, exit, err = mStatus_NoMemoryErr );
+	if ( worker == NULL )
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerInit: worker should not be null, exiting !\n" );
+		err = mStatus_BadParamErr;
+		goto exit;
+	}
+
+	source = (PollSource *) malloc( sizeof( PollSource ) );
+	if ( source == NULL )
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerInit: malloc error\n" );
+		err = mStatus_NoMemoryErr;
+		goto exit;
+	}
 
 	source->socket = INVALID_SOCKET;
 	source->handle = gPoll.wakeup;
@@ -658,66 +877,130 @@ exit:
 
 	return err;
 }
-	
 
-mDNSlocal void
-WorkerFree( Worker *worker )
+mDNSlocal void WorkerFree( Worker *worker )
 {
+	BOOL ok;
+	int i;
+	PollSource	*source = NULL;
+
 	if ( worker->start )
 	{
-		CloseHandle( worker->start );
+		ok = CloseHandle( worker->start );
+		if ( !ok )
+		{
+			DWORD ret = GetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerFree: CloseHandle failed %u %s\n", ret, win32_strerror(ret) );
+		}
 		worker->start = NULL;
 	}
 
 	if ( worker->stop )
 	{
-		CloseHandle( worker->stop );
+		ok = CloseHandle( worker->stop );
+		if ( !ok )
+		{
+			DWORD ret = GetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerFree: CloseHandle failed %u %s\n", ret, win32_strerror(ret) );
+		}
 		worker->stop = NULL;
 	}
+	
+	if ( worker->thread )
+	{
+		ok = CloseHandle( worker->thread ); // Don't forget to close thread handle !
+		if ( !ok )
+		{
+			DWORD ret = GetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerFree: CloseHandle failed %u %s\n", ret, win32_strerror(ret) );
+		}
+		worker->thread = NULL;
+	}
+	
+	for (i = 0; i < ( int ) worker->numSources; i++)
+		if (worker->sources[i]->worker == worker)
+			source = worker->sources[i];
+	if ( source != NULL )
+	{
+		WorkerUnregisterSource( worker, source );
+		mDNSPlatformMemFree( source );
+	}
 
-	free( worker );
+	if (worker != &gPoll.main)        // Free worker only if it is not the main one that is static !
+	{
+		if (worker->numSources != 0)
+		{
+			dlog(kDebugLevelVerbose, DEBUG_NAME "WorkerFree: Poll leaking, numSources not 0 : %u\n", worker->numSources);
+#ifdef DEBUG
+
+#endif
+		}
+
+		free( worker );
+	}
 }
 
-
-mDNSlocal unsigned WINAPI
-WorkerMain( LPVOID inParam )
+mDNSlocal unsigned WINAPI WorkerMain( LPVOID inParam )
 {
-	Worker *worker = ( Worker* ) inParam;
-	mStatus err = mStatus_NoError;
+	Worker	*worker = ( Worker * ) inParam;
+	DWORD	result;
+	BOOL	ok;
 
-	require_action( worker, exit, err = mStatus_BadParamErr );
-
-	dlog( kDebugLevelVerbose, DEBUG_NAME, "entering WorkerMain()\n" );
+	dlog( kDebugLevelVerbose, DEBUG_NAME "entering WorkerMain()\n" );
+	
+	if ( worker == NULL )
+	{
+		dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerMain: worker should not be null, exiting !\n" );
+		goto exit;
+	}
 
 	while ( TRUE )
 	{
-		DWORD	result;
-		BOOL	ok;
-
-		dlog( kDebugLevelChatty, DEBUG_NAME, "worker thread %d will wait on main loop\n", worker->id );
+		dlog( kDebugLevelChatty, DEBUG_NAME "WorkerMain: worker thread %u will wait on main loop\n", worker->id );
 		
 		result = WaitForSingleObject( worker->start, INFINITE );	
-		err = translate_errno( ( result != WAIT_FAILED ), ( mStatus ) GetLastError(), kUnknownErr );
-		if ( err ) { LogErr( err, "WaitForSingleObject()" ); break; }
-		if ( worker->done ) break;
+		if ( result == WAIT_FAILED )
+		{
+			DWORD ret = GetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerMain: WaitForSingleObject failed WAIT_FAILED %u %s\n", ret, win32_strerror( ret ) );
+			break;
+		}
 
-		dlog( kDebugLevelChatty, DEBUG_NAME "worker thread %d will wait on sockets\n", worker->id );
+		if ( worker->done )
+			break;
+
+		dlog( kDebugLevelChatty, DEBUG_NAME "WorkerMain: worker thread %u will wait on sockets\n", worker->id );
 
 		worker->result = WaitForMultipleObjects( worker->numSources, worker->handles, FALSE, INFINITE );
-		err = translate_errno( ( worker->result != WAIT_FAILED ), ( mStatus ) GetLastError(), kUnknownErr );
-		if ( err ) { LogErr( err, "WaitForMultipleObjects()" ); break; }
+		if ( worker->result == WAIT_FAILED )
+		{
+			DWORD ret = GetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerMain: WaitForMultipleObjects failed WAIT_FAILED %d %s\n", ret, win32_strerror( ret ) );
+			worker->error = ret;
+			break;
+		}
+		else
+			worker->error = 0;
 
-		dlog( kDebugLevelChatty, DEBUG_NAME "worker thread %d did wait on sockets: %d\n", worker->id, worker->result );
+		dlog( kDebugLevelChatty, DEBUG_NAME "WorkerMain: worker thread %u did wait on sockets: %u\n", worker->id, worker->result );
 
 		ok = SetEvent( gPoll.wakeup );
-		err = translate_errno( ok, ( mStatus ) GetLastError(), kUnknownErr );
-		if ( err ) { LogErr( err, "SetEvent()" ); break; }
+		if ( !ok )
+		{
+			DWORD ret = GetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerMain: SetEvent failed %u %s\n", ret, win32_strerror( ret ) );
+			break;
+		}
 
-		dlog( kDebugLevelChatty, DEBUG_NAME, "worker thread %d preparing to sleep\n", worker->id );
+		dlog( kDebugLevelChatty, DEBUG_NAME "WorkerMain: worker thread %u preparing to sleep\n", worker->id );
 
 		ok = SetEvent( worker->stop );
-		err = translate_errno( ok, ( mStatus ) GetLastError(), kUnknownErr );
-		if ( err ) { LogErr( err, "SetEvent()" ); break; }
+		if ( !ok )
+		{
+			DWORD ret = GetLastError();
+			dlog( kDebugLevelVerbose, DEBUG_NAME "WorkerMain: SetEvent failed %u %s\n", ret, win32_strerror( ret ) );
+			break;
+		}
 	}
 
 	dlog( kDebugLevelVerbose, DEBUG_NAME "exiting WorkerMain()\n" );

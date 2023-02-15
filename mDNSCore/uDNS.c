@@ -5620,6 +5620,130 @@ mDNSexport void uDNS_SetupWABQueries(mDNS *const m)
     }
 }
 
+
+mDNSexport void uDNS_CleanupWABQueries(mDNS *const m)
+{
+	SearchListElem **p = &SearchList, *ptr;
+	mStatus err;
+	int action = 0;
+
+	// step 1: mark each element for removal
+	for (ptr = SearchList; ptr; ptr = ptr->next)
+		ptr->flag |= SLE_DELETE;
+
+	if (m->WABBrowseQueriesCount)
+		action |= UDNS_WAB_BROWSE_QUERY;
+	if (m->WABLBrowseQueriesCount)
+		action |= UDNS_WAB_LBROWSE_QUERY;
+	if (m->WABRegQueriesCount)
+		action |= UDNS_WAB_REG_QUERY;
+
+	// delete elems marked for removal, do queries for elems marked add
+	while (*p)
+	{
+		ptr = *p;
+
+		// If SLE_DELETE is set, stop all the queries, deregister all the records and free the memory.
+		// Otherwise, check to see what the "action" requires. If a particular action bit is not set and
+		// we have started the corresponding queries as indicated by the "flags", stop those queries and
+		// deregister the records corresponding to them.
+		if ((ptr->flag & SLE_DELETE) ||
+			(!(action & UDNS_WAB_BROWSE_QUERY) && (ptr->flag & SLE_WAB_BROWSE_QUERY_STARTED)) ||
+			(!(action & UDNS_WAB_LBROWSE_QUERY) && (ptr->flag & SLE_WAB_LBROWSE_QUERY_STARTED)) ||
+			(!(action & UDNS_WAB_REG_QUERY) && (ptr->flag & SLE_WAB_REG_QUERY_STARTED)))
+		{
+			if (ptr->flag & SLE_DELETE)
+			{
+				ARListElem *arList = ptr->AuthRecs;
+				ptr->AuthRecs = mDNSNULL;
+				*p = ptr->next;
+
+				// If the user has "local" in their DNS searchlist, we ignore that for the purposes of domain enumeration queries
+				// We suppressed the domain enumeration for scoped search domains below. When we enable that
+				// enable this.
+				if ((ptr->flag & SLE_WAB_BROWSE_QUERY_STARTED) &&
+					!SameDomainName(&ptr->domain, &localdomain) && (ptr->InterfaceID == mDNSInterface_Any))
+				{
+					LogInfo("uDNS_CleanupWABQueries: DELETE  Browse for domain  %##s", ptr->domain.c);
+					err = mDNS_StopGetDomains(m, &ptr->BrowseQ);
+					if (err != mStatus_NoError)
+						verbosedebugf("%s  %d %m", __FUNCTION__, err, err);
+					err = mDNS_StopGetDomains(m, &ptr->DefBrowseQ);
+					if (err != mStatus_NoError)
+						verbosedebugf("%s  %d %m", __FUNCTION__, err, err);
+				}
+				if ((ptr->flag & SLE_WAB_LBROWSE_QUERY_STARTED) &&
+					!SameDomainName(&ptr->domain, &localdomain) && (ptr->InterfaceID == mDNSInterface_Any))
+				{
+					LogInfo("uDNS_CleanupWABQueries: DELETE  Legacy Browse for domain  %##s", ptr->domain.c);
+					err = mDNS_StopGetDomains(m, &ptr->AutomaticBrowseQ);
+					if (err != mStatus_NoError)
+						verbosedebugf("%s  %d %m", __FUNCTION__, err, err);
+				}
+				if ((ptr->flag & SLE_WAB_REG_QUERY_STARTED) &&
+					!SameDomainName(&ptr->domain, &localdomain) && (ptr->InterfaceID == mDNSInterface_Any))
+				{
+					LogInfo("uDNS_CleanupWABQueries: DELETE  Registration for domain  %##s", ptr->domain.c);
+					err = mDNS_StopGetDomains(m, &ptr->RegisterQ);
+					if (err != mStatus_NoError)
+						verbosedebugf("%s  %d %m", __FUNCTION__, err, err);
+					err = mDNS_StopGetDomains(m, &ptr->DefRegisterQ);
+					if (err != mStatus_NoError)
+						verbosedebugf("%s  %d %m", __FUNCTION__, err, err);
+				}
+
+				mDNSPlatformMemFree(ptr);
+
+				// deregister records generated from answers to the query
+				while (arList)
+				{
+					ARListElem *dereg = arList;
+					arList = arList->next;
+					LogInfo("uDNS_CleanupWABQueries: DELETE Deregistering PTR %##s -> %##s",
+                            dereg->ar.resrec.name->c, dereg->ar.resrec.rdata->u.name.c);
+
+					err = mDNS_Deregister(m, &dereg->ar);
+					if (err != mStatus_NoError)
+					{
+						LogMsg("uDNS_CleanupWABQueries: ERROR!! mDNS_Deregister returned %d %m", err, err);
+					}
+					// Memory will be freed in the FreeARElemCallback
+				}
+				continue;
+			}
+
+			// If the user has "local" in their DNS searchlist, we ignore that for the purposes of domain enumeration queries
+			// We suppressed the domain enumeration for scoped search domains below. When we enable that
+			// enable this.
+			if (!(action & UDNS_WAB_BROWSE_QUERY) && (ptr->flag & SLE_WAB_BROWSE_QUERY_STARTED) &&
+				!SameDomainName(&ptr->domain, &localdomain) && (ptr->InterfaceID == mDNSInterface_Any))
+			{
+				LogInfo("uDNS_CleanupWABQueries: Deleting Browse for domain  %##s", ptr->domain.c);
+				ptr->flag &= ~SLE_WAB_BROWSE_QUERY_STARTED;
+				uDNS_DeleteWABQueries(m, ptr, UDNS_WAB_BROWSE_QUERY);
+			}
+
+			if (!(action & UDNS_WAB_LBROWSE_QUERY) && (ptr->flag & SLE_WAB_LBROWSE_QUERY_STARTED) &&
+				!SameDomainName(&ptr->domain, &localdomain) && (ptr->InterfaceID == mDNSInterface_Any))
+			{
+				LogInfo("uDNS_CleanupWABQueries: Deleting Legacy Browse for domain  %##s", ptr->domain.c);
+				ptr->flag &= ~SLE_WAB_LBROWSE_QUERY_STARTED;
+				uDNS_DeleteWABQueries(m, ptr, UDNS_WAB_LBROWSE_QUERY);
+			}
+
+			if (!(action & UDNS_WAB_REG_QUERY) && (ptr->flag & SLE_WAB_REG_QUERY_STARTED) &&
+				!SameDomainName(&ptr->domain, &localdomain) && (ptr->InterfaceID == mDNSInterface_Any))
+			{
+				LogInfo("uDNS_CleanupWABQueries: Deleting Registration for domain  %##s", ptr->domain.c);
+				ptr->flag &= ~SLE_WAB_REG_QUERY_STARTED;
+				uDNS_DeleteWABQueries(m, ptr, UDNS_WAB_REG_QUERY);
+			}
+		}
+
+		p = &ptr->next;
+	}
+}
+
 // mDNS_StartWABQueries is called once per API invocation where normally
 // one of the bits is set.
 mDNSexport void uDNS_StartWABQueries(mDNS *const m, int queryType)

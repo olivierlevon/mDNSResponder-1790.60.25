@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 4 -*-
  *
- * Copyright (c) 2002-2004 Apple Computer, Inc. All rights reserved.
+ * Copyright (c) 2002-2023 Apple Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,9 +59,11 @@ void setlinebuf( FILE * fp ) {}
 #   include "mDNSPosix.h"      // Defines the specific types needed to run mDNS on this platform
 #endif
 
+#include "DebugServices.h"
+
 #if defined(_DEBUG)
 #ifdef VLD
-#include <vld.h> 
+#include <vld.h>
 #endif
 #endif
 
@@ -193,8 +195,8 @@ typedef struct
     HostEntry   *hosts;
 } HostList;
 
-static HostList IPv4HostList = { 0, 0, 0 };
-static HostList IPv6HostList = { 0, 0, 0 };
+static HostList IPv4HostList = { 0, 0, NULL };
+static HostList IPv6HostList = { 0, 0, NULL };
 
 mDNSlocal HostEntry *FindHost(const mDNSAddr *addr, HostList *list)
 {
@@ -244,6 +246,25 @@ mDNSlocal HostEntry *AddHost(const mDNSAddr *addr, HostList *list)
         mDNS_snprintf(buffer, sizeof(buffer), "%d.%d.%d.%d.in-addr.arpa.", ip.b[3], ip.b[2], ip.b[1], ip.b[0]);
         MakeDomainNameFromDNSNameString(&entry->revname, buffer);
     }
+	else
+		if (entry->addr.type == mDNSAddrType_IPv6)
+		{
+			int j;
+			mDNSv6Addr ip = entry->addr.ip.v6;
+			char buffer[MAX_REVERSE_MAPPING_NAME+1];
+
+			// Note: This is reverse order compared to a normal dotted-decimal IP address, so we can't use our customary "%.16a" format code
+			for (j = 0; j < 16; j++) //1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.
+			{
+				static const char hexValues[] = "0123456789ABCDEF";
+				buffer[j * 4    ] = hexValues[ip.b[15 - j] & 0x0F];
+				buffer[j * 4 + 1] = '.';
+				buffer[j * 4 + 2] = hexValues[ip.b[15 - j] >> 4];
+				buffer[j * 4 + 3] = '.';
+			}
+			mDNS_snprintf(&buffer[64], sizeof(buffer)-64, "ip6.arpa.");
+			MakeDomainNameFromDNSNameString(&entry->revname, buffer);
+		}
 
     return(entry);
 }
@@ -382,11 +403,75 @@ mDNSlocal void ShowSortedHostList(HostList *list, int max)
 //*************************************************************************************************************
 // Receive and process packets
 
+#define StripFirstLabel(X) ((const domainname *)& (X)->c[(X)->c[0] ? 1 + (X)->c[0] : 0])
+
+#define FirstLabel(X)  ((const domainlabel *)(X))
+#define SecondLabel(X) ((const domainlabel *)StripFirstLabel(X))
+#define ThirdLabel(X)  ((const domainlabel *)StripFirstLabel(StripFirstLabel(X)))
+
+// Return a pointer to the primary service name, skipping subtype name if present.
+mDNSlocal const domainname *getPrimaryServiceName(const domainname *domainName)
+{
+    const domainname *primaryName = domainName;
+    const domainname *subName = SkipLeadingLabels(domainName, 1);
+
+    if (SameDomainLabel(subName->c, (const mDNSu8 *)mDNSSubTypeLabel))
+    {
+        // skip "<sub type name>._sub" portion of name
+        primaryName = SkipLeadingLabels(domainName, 2);
+    }
+
+    return primaryName;
+}
+
 mDNSlocal mDNSBool ExtractServiceType(const domainname *const fqdn, domainname *const srvtype)
 {
     int i, len;
-    const mDNSu8 *src = fqdn->c;
+    const mDNSu8 *src;
     mDNSu8 *dst = srvtype->c;
+    domainname *d;
+
+	if (SameDomainLabel(SecondLabel(fqdn), (mDNSu8 *)"\x07_dns-sd"))
+	{
+		if (SameDomainLabel(FirstLabel(fqdn), (mDNSu8 *)"\x09_services") ||
+			SameDomainLabel(FirstLabel(fqdn), (mDNSu8 *)"\x0A_keepalive"))
+		{
+			src = fqdn->c;
+
+			len = *src;
+			if (len == 0 || len >= 0x40)
+				return mDNSfalse;
+			if (src[1] != '_')
+				src += 1 + len;
+
+			len = *src;
+			if (len == 0 || len >= 0x40 || src[1] != '_') // copy _services or _keepalive
+				return mDNSfalse;
+			for (i = 0; i <= len; i++)
+				*dst++ = *src++;
+
+			len = *src;
+			if (len == 0 || len >= 0x40 || src[1] != '_') // copy _dns-sd
+				return mDNSfalse;
+			for (i = 0; i <= len; i++)
+				*dst++ = *src++;
+
+			len = *src;
+			if (len == 0 || len >= 0x40 || src[1] != '_') // copy _udp
+				return mDNSfalse;
+			for (i = 0; i <= len; i++)
+				*dst++ = *src++;
+
+			*dst++ = 0;     // Put the null root label on the end of the service type
+
+			return mDNStrue;
+		}
+	
+	}
+
+	d = (domainname *)getPrimaryServiceName(fqdn);
+
+	src = d->c;
 
     len = *src;
     if (len == 0 || len >= 0x40) return(mDNSfalse);
@@ -459,6 +544,19 @@ mDNSlocal void printstats(int max)
     }
 }
 
+mDNSlocal void deletestats()
+{
+	ActivityStat *s, *m;
+
+	s = stats;
+	while (s)
+	{
+		m = s;
+		s = s->next;
+		free(m);
+	}
+}
+
 mDNSlocal const mDNSu8 *FindUpdate(mDNS *const m, const DNSMessage *const query, const mDNSu8 *ptr, const mDNSu8 *const end,
                                    DNSQuestion *q, LargeCacheRecord *pkt)
 {
@@ -477,14 +575,17 @@ mDNSlocal void DisplayPacketHeader(mDNS *const m, const DNSMessage *const msg, c
 {
     const char *const ptype = (msg->h.flags.b[0] & kDNSFlag0_QR_Response)             ? "-R- " :
                               (srcport.NotAnInteger == MulticastDNSPort.NotAnInteger) ? "-Q- " : "-LQ-";
+    time_t t;
     const unsigned length = end - (mDNSu8 *)msg;
     struct timeval tv;
     struct tm tm;
     const mDNSu32 index = mDNSPlatformInterfaceIndexfromInterfaceID(m, InterfaceID, mDNSfalse);
-    char if_name[IFNAMSIZ];     // Older Linux distributions don't define IF_NAMESIZE
+    char if_name[IFNAMSIZ] = "unknown";     // Older Linux distributions don't define IF_NAMESIZE
+
     if_indextoname(index, if_name);
     gettimeofday(&tv, NULL);
-    localtime_r((time_t*)&tv.tv_sec, &tm);
+    t = (time_t)tv.tv_sec;
+    localtime_r(&t, &tm);
     mprintf("\n%d:%02d:%02d.%06d Interface %d/%s\n", tm.tm_hour, tm.tm_min, tm.tm_sec, tv.tv_usec, index, if_name);
 
     mprintf("%#-16a %s             Q:%3d  Ans:%3d  Auth:%3d  Add:%3d  Size:%5d bytes",
@@ -524,7 +625,7 @@ mDNSlocal void DisplaySizeCheck(const DNSMessage *const msg, const mDNSu8 *const
 
 mDNSlocal void DisplayResourceRecord(const mDNSAddr *const srcaddr, const char *const op, const ResourceRecord *const pktrr)
 {
-    static const char hexchars[16] = "0123456789ABCDEF";
+    static const char hexchars[] = "0123456789ABCDEF";
     #define MaxWidth 132
     char buffer[MaxWidth+8];
     char *p = buffer;
@@ -870,30 +971,54 @@ mDNSexport void mDNSCoreReceive(mDNS *const m, DNSMessage *const msg, const mDNS
 
 mDNSlocal mStatus mDNSNetMonitor(void)
 {
+    mStatus status;
     struct tm tm;
+    time_t t;
     int h, m, s, mul, div, TotPkt;
 #if !defined(WIN32)
     sigset_t signals;
 #endif
 
-    mStatus status = mDNS_Init(&mDNSStorage, &PlatformStorage,
-                               mDNS_Init_NoCache, mDNS_Init_ZeroCacheSize,
-                               mDNS_Init_DontAdvertiseLocalAddresses,
-                               mDNS_Init_NoInitCallback, mDNS_Init_NoInitCallbackContext);
+    printf("...STARTING...\n");
+
+	mDNSPlatformMemZero(&mDNSStorage, sizeof(mDNSStorage));
+    mDNSPlatformMemZero(&PlatformStorage, sizeof(PlatformStorage));
+	
+#if defined( WIN32 )
+	status = PollSetup();
+	if (status != mStatus_NoError)
+		goto exit;
+
+#endif
+
+    status = mDNS_Init(&mDNSStorage, &PlatformStorage,
+                       mDNS_Init_NoCache, mDNS_Init_ZeroCacheSize,
+                       mDNS_Init_DontAdvertiseLocalAddresses,
+                       mDNS_Init_NoInitCallback, mDNS_Init_NoInitCallbackContext);
     if (status) return(status);
 
     gettimeofday(&tv_start, NULL);
 
 #if defined( WIN32 )
     status = SetupInterfaceList(&mDNSStorage);
-    if (status) return(status);
+    if (status)
+        return(status);
     gStopEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    if (gStopEvent == INVALID_HANDLE_VALUE) return mStatus_UnknownErr;
+    if (gStopEvent == INVALID_HANDLE_VALUE) 
+        return mStatus_UnknownErr;
     mDNSPollRegisterEvent( gStopEvent, StopNotification, NULL );
-    if (!SetConsoleCtrlHandler(ConsoleControlHandler, TRUE)) return mStatus_UnknownErr;
-    gRunning = mDNStrue; while (gRunning) mDNSPoll( INFINITE );
-    if (!SetConsoleCtrlHandler(ConsoleControlHandler, FALSE)) return mStatus_UnknownErr;
+    if (!SetConsoleCtrlHandler(ConsoleControlHandler, TRUE))
+        return mStatus_UnknownErr;
+
+    gRunning = mDNStrue;
+    while (gRunning)
+        mDNSPoll( INFINITE );
+
+    if (!SetConsoleCtrlHandler(ConsoleControlHandler, FALSE))
+        return mStatus_UnknownErr;
+    mDNSPollUnregisterEvent( gStopEvent );
     CloseHandle(gStopEvent);
+    TearDownInterfaceList(&mDNSStorage);
 #else
     mDNSPosixListenForSignalInEventLoop(SIGINT);
     mDNSPosixListenForSignalInEventLoop(SIGTERM);
@@ -931,9 +1056,11 @@ mDNSlocal mStatus mDNSNetMonitor(void)
     }
 
     mprintf("\n\n");
-    localtime_r((time_t*)&tv_start.tv_sec, &tm);
+    t = (time_t)tv_start.tv_sec;
+    localtime_r(&t, &tm);
     mprintf("Started      %3d:%02d:%02d.%06d\n", tm.tm_hour, tm.tm_min, tm.tm_sec, tv_start.tv_usec);
-    localtime_r((time_t*)&tv_end.tv_sec, &tm);
+    t = (time_t)tv_end.tv_sec;
+    localtime_r(&t, &tm);
     mprintf("End          %3d:%02d:%02d.%06d\n", tm.tm_hour, tm.tm_min, tm.tm_sec, tv_end.tv_usec);
     mprintf("Captured for %3d:%02d:%02d.%06d\n", h, m, s, tv_interval.tv_usec);
     if (!Filters)
@@ -959,13 +1086,26 @@ mDNSlocal mStatus mDNSNetMonitor(void)
     mprintf("\n");
     printstats(kReportTopServices);
 
+    deletestats();
+
     if (!ExactlyOneFilter)
     {
         ShowSortedHostList(&IPv4HostList, kReportTopHosts);
         ShowSortedHostList(&IPv6HostList, kReportTopHosts);
     }
 
+	if (IPv4HostList.hosts)
+		free(IPv4HostList.hosts);
+	if (IPv6HostList.hosts)
+		free(IPv6HostList.hosts);
+
+exit:
     mDNS_Close(&mDNSStorage);
+
+#if defined( WIN32 )
+	PollCleanup();
+#endif
+
     return(0);
 }
 
@@ -973,70 +1113,35 @@ mDNSlocal mStatus mDNSNetMonitor(void)
 #define main main_NetMonitor
 #endif
 
-mDNSexport int main(int argc, char **argv)
+FilterList *AddFilter(mDNSAddr a)
 {
-    const char *progname = strrchr(argv[0], '/') ? strrchr(argv[0], '/') + 1 : argv[0];
-    int i;
-    mStatus status;
-
-#if defined(WIN32)
-    HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-#endif
-
-    setlinebuf(stdout);             // Want to see lines as they appear, not block buffered
-
-    for (i=1; i<argc; i++)
+	FilterList *f;
+	
+	f = (FilterList *) malloc(sizeof(*f));
+    if (f)
     {
-		if (i+1 < argc && !strcmp(argv[i], "-i"))
-        {
-			FilterInterface = if_nametoindex(argv[i+1]);
-			if (!FilterInterface) FilterInterface = atoi(argv[i+1]);
-			if (!FilterInterface) {
-				fprintf(stderr, "Unknown interface %s\n", argv[i+1]);
-				goto usage;
-			}
-            printf("Monitoring interface %d/%s\n", FilterInterface, argv[i+1]);
-			i += 1;
-        }
-        else if (!strcmp(argv[i], "-6"))
-        {
-            AddressType = mDNSAddrType_IPv6;
-            printf("Monitoring IPv6 traffic\n");
-        }
-        else
-        {
-            struct in_addr s4;
-            struct in6_addr s6;
-            FilterList *f;
-            mDNSAddr a;
-            a.type = mDNSAddrType_IPv4;
-
-            if (inet_pton(AF_INET, argv[i], &s4) == 1)
-                a.ip.v4.NotAnInteger = s4.s_addr;
-            else if (inet_pton(AF_INET6, argv[i], &s6) == 1)
-            {
-                a.type = mDNSAddrType_IPv6;
-                mDNSPlatformMemCopy(&a.ip.v6, &s6, sizeof(a.ip.v6));
-            }
-            else
-            {
-                struct hostent *h = gethostbyname(argv[i]);
-                if (h) a.ip.v4.NotAnInteger = *(long*)h->h_addr;
-                else goto usage;
-            }
-
-            f = malloc(sizeof(*f));
-            f->FilterAddr = a;
-            f->next = Filters;
-            Filters = f;
-        }
+        f->FilterAddr = a;
+        f->next = Filters;
+        Filters = f;
     }
+    return f;
+}
 
-    status = mDNSNetMonitor();
-    if (status) { fprintf(stderr, "%s: mDNSNetMonitor failed %d\n", progname, (int)status); return(status); }
-    return(0);
+void RmvFilters(void)
+{
+	FilterList *f, *a;
 
-usage:
+	f = Filters;
+	while (f)
+	{
+		a = f;
+		f = f->next;
+		free(a);
+	}
+}
+
+void printusage(const char *progname)
+{
     fprintf(stderr, "\nmDNS traffic monitor\n");
     fprintf(stderr, "Usage: %s [-i index] [-6] [host]\n", progname);
     fprintf(stderr, "Optional [-i index] parameter displays only packets from that interface index\n");
@@ -1070,5 +1175,127 @@ usage:
     fprintf(stderr, "ResolveQ       Resolve questions from clients actively connecting to an instance of this service\n");
     fprintf(stderr, "ResolveA       Resolve answers/announcments giving connection information for an instance of this service\n");
     fprintf(stderr, "\n");
-    return(-1);
+}
+
+mDNSexport int main(int argc, char **argv)
+{
+    const char *progname = strrchr(argv[0], '/') ? strrchr(argv[0], '/') + 1 : argv[0];
+    int i;
+    mStatus status = mStatus_NoError;
+#if defined(WIN32)
+    WSADATA wsaData;
+	int WinSockInitialized = 0;
+    int ret;
+#endif
+
+#if defined(WIN32)
+    HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
+#endif
+
+#ifdef DEBUG
+    mDNS_LoggingEnabled       = 1;
+    mDNS_PacketLoggingEnabled = 1;
+    mDNS_McastLoggingEnabled  = 1;
+    mDNS_McastTracingEnabled  = 1; 
+    mDNS_DebugMode = 0; //1;          // If non-zero, LogMsg() writes to stderr instead of syslog
+#endif
+
+	debug_initialize( kDebugOutputTypeMetaConsole );
+
+	debug_set_property( kDebugPropertyTagPrintLevelMin, kDebugLevelInfo);
+	debug_set_property( kDebugPropertyTagBreakLevel, kDebugLevelMax);
+
+    setlinebuf(stdout);             // Want to see lines as they appear, not block buffered
+
+#if defined(WIN32)
+    // Initialize WinSock WinSock 2.2 or later, needed by if_nametoindex/if_indextoname on Windows
+	ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (ret != 0)
+	{
+		fprintf(stderr, "cannot initialize WinSock\n");
+		return ret;
+    }
+	else
+		WinSockInitialized = 1;
+#endif
+
+    for (i=1; i<argc; i++)
+    {
+		if (i+1 < argc && !strcmp(argv[i], "-i"))
+        {
+			FilterInterface = if_nametoindex(argv[i+1]);
+			if (!FilterInterface) 
+                FilterInterface = atoi(argv[i+1]);
+			if (!FilterInterface)
+            {
+				fprintf(stderr, "Unknown interface %s\n", argv[i+1]);
+                printusage(progname);
+                status = mStatus_UnknownErr;
+				goto exit;
+			}
+            printf("Monitoring interface %d/%s\n", FilterInterface, argv[i+1]);
+			i += 1;
+        }
+        else if (!strcmp(argv[i], "-6"))
+        {
+            AddressType = mDNSAddrType_IPv6;
+            printf("Monitoring IPv6 traffic\n");
+        }
+        else
+        {
+            struct in_addr s4;
+            struct in6_addr s6;
+            FilterList *f;
+            mDNSAddr a;
+            a.type = mDNSAddrType_IPv4;
+
+            if (inet_pton(AF_INET, argv[i], &s4) == 1)
+                a.ip.v4.NotAnInteger = s4.s_addr;
+            else if (inet_pton(AF_INET6, argv[i], &s6) == 1)
+            {
+                a.type = mDNSAddrType_IPv6;
+                mDNSPlatformMemCopy(&a.ip.v6, &s6, sizeof(a.ip.v6));
+            }
+            else
+            {
+                struct hostent *h = gethostbyname(argv[i]);
+                if (h)
+                    a.ip.v4.NotAnInteger = *(long*)h->h_addr;
+                else
+                {
+				    fprintf(stderr, "Unknown interface %s\n", argv[i+1]);
+                    printusage(progname);
+                    status = mStatus_UnknownErr;
+				    goto exit;
+			    }
+            }
+
+            f = malloc(sizeof(*f));
+            f->FilterAddr = a;
+            f->next = Filters;
+            Filters = f;
+        }
+    }
+
+    status = mDNSNetMonitor();
+    if (status)
+    { 
+        fprintf(stderr, "%s: mDNSNetMonitor failed %d\n", progname, (int)status);
+    }
+
+
+exit:
+	// Cleanups
+	
+	RmvFilters();
+
+#if defined(WIN32)
+    // Clean up WinSock.
+	if (WinSockInitialized)
+		WSACleanup();
+#endif	
+
+    debug_terminate();
+
+    return status;
 }

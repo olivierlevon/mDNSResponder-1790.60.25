@@ -182,6 +182,7 @@ extern mStatus         uDNS_SetupDNSConfig(mDNS *const m);
 #define UDNS_WAB_REG_QUERY       0x00000004 // Registration queries (r and dr)
 
 extern void uDNS_SetupWABQueries(mDNS *const m);
+extern void uDNS_CleanupWABQueries(mDNS *const m);
 extern void uDNS_StartWABQueries(mDNS *const m, int queryType);
 extern void uDNS_StopWABQueries(mDNS *const m, int queryType);
 extern domainname      *uDNS_GetNextSearchDomain(mDNSInterfaceID InterfaceID, int *searchIndex, mDNSBool ignoreDotLocal);
